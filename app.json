@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Rolê SC",
+    "slug": "role-sc",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "rolesc",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#E6F4FB"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1E88E5"
+      },
+      "package": "com.rolesc.app"
+    }
+  }
+}
