@@ -16,7 +16,9 @@ import { Input } from '@/components/Input';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { extractErrorMessage } from '@/services/api';
+import { getApiErrorCode } from '@/services/auth.service';
 import { colors, spacing, typography } from '@/theme';
+import { API_ERROR_CODES } from '@/types';
 
 import { AuthStackScreenProps } from '@/navigation/types';
 
@@ -32,9 +34,18 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Campos obrigatórios', 'Preencha email e senha para entrar.');
       return;
     }
+    const emailNormalizado = email.trim().toLowerCase();
     try {
-      await signIn(email.trim().toLowerCase(), senha);
+      await signIn(emailNormalizado, senha);
     } catch (err) {
+      // Caso especial: backend responde 403 com code EMAIL_NOT_VERIFIED
+      // quando a conta existe mas o email ainda não foi confirmado.
+      // Em vez de um alert genérico, levamos o usuário para a tela de
+      // verificação com opção de reenviar o email.
+      if (getApiErrorCode(err) === API_ERROR_CODES.EMAIL_NOT_VERIFIED) {
+        navigation.navigate('VerificarEmail', { email: emailNormalizado });
+        return;
+      }
       Alert.alert('Não foi possível entrar', extractErrorMessage(err));
     }
   };

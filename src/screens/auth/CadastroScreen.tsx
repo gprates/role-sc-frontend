@@ -45,8 +45,10 @@ export const CadastroScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert('Atenção', err);
       return;
     }
+    const emailNormalizado = email.trim().toLowerCase();
     try {
-      await signUp(nome.trim(), email.trim().toLowerCase(), senha);
+      await signUp(nome.trim(), emailNormalizado, senha);
+      navigation.navigate('VerificarEmail', { email: emailNormalizado });
     } catch (e) {
       Alert.alert('Não foi possível criar a conta', extractErrorMessage(e));
     }

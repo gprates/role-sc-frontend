@@ -6,6 +6,7 @@ export type AuthStackParamList = {
   Login: undefined;
   Cadastro: undefined;
   RecuperarSenha: undefined;
+  VerificarEmail: { email: string };
 };
 
 export type HomeStackParamList = {

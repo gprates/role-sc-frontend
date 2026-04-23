@@ -1,10 +1,15 @@
+import axios from 'axios';
+
 import api from './api';
 import {
+  ApiErrorBody,
+  ApiErrorCode,
   LoginBody,
   LoginResponse,
   MeResponse,
   RegisterBody,
   RegisterResponse,
+  ResendVerificationResponse,
 } from '@/types';
 
 export const authService = {
@@ -24,6 +29,18 @@ export const authService = {
   },
 
   /**
+   * Reenvia o email de verificação. Ver seção 4.4 do CONTRATO_VERIFICACAO_EMAIL.md.
+   * Resposta é sempre genérica — não indica se o email existe ou não (antienumeration).
+   */
+  async resendVerification(email: string): Promise<ResendVerificationResponse> {
+    const { data } = await api.post<ResendVerificationResponse>(
+      '/auth/resend-verification',
+      { email },
+    );
+    return data;
+  },
+
+  /**
    * Stub — endpoint ainda não existe no backend.
    * Simula um delay e sempre retorna sucesso (comportamento acordado com o usuário).
    * Quando o backend implementar POST /auth/forgot-password, basta descomentar
@@ -35,4 +52,14 @@ export const authService = {
     // const { data } = await api.post('/auth/forgot-password', { email: _email });
     // return data;
   },
+};
+
+/**
+ * Retorna o `code` semântico de um erro da API, se houver.
+ * Usado pelas telas para branching (ex: detectar EMAIL_NOT_VERIFIED no login).
+ */
+export const getApiErrorCode = (err: unknown): ApiErrorCode | null => {
+  if (!axios.isAxiosError<ApiErrorBody>(err)) return null;
+  const code = err.response?.data?.code;
+  return (code as ApiErrorCode) ?? null;
 };

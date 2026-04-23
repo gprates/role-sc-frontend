@@ -20,6 +20,14 @@ interface AuthContextValue {
   bootstrapping: boolean;
   submitting: boolean;
   signIn: (email: string, senha: string) => Promise<void>;
+  /**
+   * Cria uma conta no backend.
+   *
+   * IMPORTANTE: após sucesso, o usuário NÃO é logado automaticamente.
+   * O backend exige verificação de email antes de permitir login
+   * (ver CONTRATO_VERIFICACAO_EMAIL.md, seção 4.1). A tela chamadora
+   * deve navegar para VerificarEmail e orientar o usuário a checar a caixa.
+   */
   signUp: (nome: string, email: string, senha: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -81,11 +89,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSubmitting(true);
       try {
         await authService.register({ nome, email, senha });
-        const res = await authService.login({ email, senha });
-        await storage.set(STORAGE_KEYS.token, res.token);
-        await storage.set(STORAGE_KEYS.user, res.user);
-        setToken(res.token);
-        setUser(res.user);
+        // NÃO autenticamos aqui. O backend requer verificação de email
+        // antes de liberar o login. Quem chamou signUp é responsável por
+        // navegar até a tela VerificarEmail.
       } finally {
         setSubmitting(false);
       }
