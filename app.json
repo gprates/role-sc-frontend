@@ -11,12 +11,27 @@
       "resizeMode": "contain",
       "backgroundColor": "#E6F4FB"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#1E88E5"
       },
       "package": "com.rolesc.app"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d6d3a15d-3667-437b-af73-b348034154f8"
+      }
+    },
+    "owner": "josephlucene",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d6d3a15d-3667-437b-af73-b348034154f8"
+    },
+    "ios": {}
   }
 }
