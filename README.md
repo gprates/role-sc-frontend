@@ -142,6 +142,29 @@ Se o backend mudar alguma dessas listas, basta atualizar o arquivo de constantes
 
 ---
 
+## Publicação
+
+O projeto já vem configurado pra build na nuvem via **EAS (Expo Application Services)**. Perfis configurados no `eas.json`:
+
+- **`preview`** — gera APK instalável, distribuído por link. Grátis.
+- **`production`** — gera AAB (Android App Bundle) pra submissão na Play Store.
+
+Comandos rápidos (depois de configurar a conta Expo — ver `docs/PUBLICACAO.md`):
+
+```powershell
+pnpm build:preview        # gera APK de teste (15-20 min na nuvem)
+pnpm build:production     # gera AAB pra Play Store
+pnpm submit:production    # envia o AAB pro Play Console
+```
+
+O fluxo completo, incluindo setup da conta Expo, configuração de secrets, passos do Google Play Console e roadmap pragmático pro TCC, está em **[`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md)**.
+
+Documentos de arquitetura relacionados:
+- [`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md) — builds e publicação
+- [`docs/CONTRATO_VERIFICACAO_EMAIL.md`](./docs/CONTRATO_VERIFICACAO_EMAIL.md) — contrato de integração backend ↔ frontend pra verificação de email
+
+---
+
 ## Licença / Créditos
 
 Projeto acadêmico (TCC) de Gabriel Prates — 2026.
