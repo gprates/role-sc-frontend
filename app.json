@@ -20,6 +20,15 @@
       },
       "package": "com.rolesc.app"
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita acesso às suas fotos para enviar uma foto de perfil.",
+          "cameraPermission": "Permita acesso à câmera para tirar uma foto de perfil."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "d6d3a15d-3667-437b-af73-b348034154f8"

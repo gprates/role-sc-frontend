@@ -3,6 +3,11 @@ export interface UserPublic {
   nome: string;
   email: string;
   emailVerified?: boolean;
+  /**
+   * URL pública do avatar no S3, com query string `?v=` pra cache busting.
+   * `undefined` significa que o usuário ainda não fez upload de nenhuma foto.
+   */
+  avatarUrl?: string;
   createdAt: string;
 }
 
@@ -54,6 +59,9 @@ export const API_ERROR_CODES = {
   INVALID_RESET_TOKEN: 'INVALID_RESET_TOKEN',
   INVALID_CURRENT_PASSWORD: 'INVALID_CURRENT_PASSWORD',
   WEAK_PASSWORD: 'WEAK_PASSWORD',
+  AVATAR_TOO_LARGE: 'AVATAR_TOO_LARGE',
+  AVATAR_INVALID_TYPE: 'AVATAR_INVALID_TYPE',
+  AVATAR_NOT_UPLOADED: 'AVATAR_NOT_UPLOADED',
 } as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];

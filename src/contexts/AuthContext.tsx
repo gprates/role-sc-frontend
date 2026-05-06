@@ -31,6 +31,12 @@ interface AuthContextValue {
   signUp: (nome: string, email: string, senha: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  /**
+   * Aplica um patch parcial no user atual (e persiste no AsyncStorage).
+   * Útil quando uma operação local atualiza só parte do user — ex: upload
+   * de avatar precisa atualizar `avatarUrl` sem refazer um getMe inteiro.
+   */
+  patchUser: (patch: Partial<UserPublic>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -109,6 +115,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const patchUser = useCallback(async (patch: Partial<UserPublic>) => {
+    setUser((current) => {
+      if (!current) return current;
+      const updated = { ...current, ...patch };
+      void storage.set(STORAGE_KEYS.user, updated);
+      return updated;
+    });
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -119,8 +134,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       signUp,
       signOut,
       refreshUser,
+      patchUser,
     }),
-    [user, token, bootstrapping, submitting, signIn, signUp, signOut, refreshUser],
+    [
+      user,
+      token,
+      bootstrapping,
+      submitting,
+      signIn,
+      signUp,
+      signOut,
+      refreshUser,
+      patchUser,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

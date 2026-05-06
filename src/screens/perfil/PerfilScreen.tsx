@@ -1,6 +1,8 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { colors, radius, spacing, typography } from '@/theme';
 import { APP_VERSION } from '@/utils/constants';
 
@@ -21,6 +24,7 @@ type Props = PerfilStackScreenProps<'PerfilHome'>;
 
 export const PerfilScreen: React.FC<Props> = ({ navigation }) => {
   const { user, signOut } = useAuth();
+  const { uploading, promptPickAndUpload } = useAvatarUpload();
 
   const handleLogout = () => {
     Alert.alert('Sair', 'Deseja realmente encerrar sua sessão?', [
@@ -36,6 +40,7 @@ export const PerfilScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const inicial = user?.nome?.[0]?.toUpperCase() ?? '?';
+  const avatarUrl = user?.avatarUrl;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -46,19 +51,38 @@ export const PerfilScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.pageTitle}>Meu Perfil</Text>
 
         <View style={styles.avatarSection}>
-          <View style={styles.avatarWrap}>
-            <LinearGradient
-              colors={colors.gradientAvatar}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.avatarBg}
-            >
-              <Text style={styles.avatarText}>{inicial}</Text>
-            </LinearGradient>
+          <Pressable
+            onPress={promptPickAndUpload}
+            disabled={uploading}
+            style={styles.avatarWrap}
+          >
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarBg}
+                accessibilityLabel="Foto de perfil"
+              />
+            ) : (
+              <LinearGradient
+                colors={colors.gradientAvatar}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.avatarBg}
+              >
+                <Text style={styles.avatarText}>{inicial}</Text>
+              </LinearGradient>
+            )}
+
+            {uploading ? (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color={colors.textOnPrimary} />
+              </View>
+            ) : null}
+
             <View style={styles.cameraBtn}>
               <Ionicons name="camera" size={14} color={colors.textOnPrimary} />
             </View>
-          </View>
+          </Pressable>
           <Text style={styles.userName}>{user?.nome ?? 'Visitante'}</Text>
           <Text style={styles.userEmail}>
             {user?.email ?? 'visitante@rolesc.app'}
@@ -127,6 +151,17 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceMuted,
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',
   },
