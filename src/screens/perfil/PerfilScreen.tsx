@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import {
   Alert,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -14,63 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { colors, radius, spacing, typography } from '@/theme';
-import { APP_VERSION, MUNICIPIOS_FIXOS, STORAGE_KEYS } from '@/utils/constants';
-import { storage } from '@/utils/storage';
+import { APP_VERSION } from '@/utils/constants';
 
 import { PerfilStackScreenProps } from '@/navigation/types';
 
 type Props = PerfilStackScreenProps<'PerfilHome'>;
 
-interface NotificationSettings {
-  push: boolean;
-  municipios: Record<string, boolean>;
-}
-
-const DEFAULT_NOTIFICATIONS: NotificationSettings = {
-  push: true,
-  municipios: MUNICIPIOS_FIXOS.reduce<Record<string, boolean>>(
-    (acc, m) => ({ ...acc, [m]: true }),
-    {},
-  ),
-};
-
 export const PerfilScreen: React.FC<Props> = ({ navigation }) => {
   const { user, signOut } = useAuth();
-  const [notifications, setNotifications] = useState<NotificationSettings>(
-    DEFAULT_NOTIFICATIONS,
-  );
-
-  useEffect(() => {
-    const load = async () => {
-      const stored = await storage.get<NotificationSettings>(
-        STORAGE_KEYS.notificacoes,
-      );
-      if (stored) setNotifications(stored);
-    };
-    void load();
-  }, []);
-
-  const updateNotifications = useCallback(
-    async (next: NotificationSettings) => {
-      setNotifications(next);
-      await storage.set(STORAGE_KEYS.notificacoes, next);
-    },
-    [],
-  );
-
-  const togglePush = () => {
-    void updateNotifications({ ...notifications, push: !notifications.push });
-  };
-
-  const toggleMunicipio = (municipio: string) => {
-    void updateNotifications({
-      ...notifications,
-      municipios: {
-        ...notifications.municipios,
-        [municipio]: !notifications.municipios[municipio],
-      },
-    });
-  };
 
   const handleLogout = () => {
     Alert.alert('Sair', 'Deseja realmente encerrar sua sessão?', [
@@ -138,52 +88,6 @@ export const PerfilScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.itemLabel}>Alterar senha</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
-
-        <Text style={styles.sectionLabel}>CONFIGURAÇÕES</Text>
-        <View style={styles.card}>
-          <View style={styles.switchRow}>
-            <View style={styles.itemIconWrap}>
-              <Ionicons
-                name="notifications-outline"
-                size={20}
-                color={colors.primary}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemLabel}>Notificações push</Text>
-              <Text style={styles.itemSubtitle}>
-                Receba avisos sobre novos eventos
-              </Text>
-            </View>
-            <Switch
-              value={notifications.push}
-              onValueChange={togglePush}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <Text style={styles.notifyLabel}>NOTIFICAR POR MUNICÍPIO</Text>
-          {MUNICIPIOS_FIXOS.map((m, index) => (
-            <View key={m}>
-              <View style={styles.switchRow}>
-                <Text style={[styles.itemLabel, { flex: 1 }]}>{m}</Text>
-                <Switch
-                  value={notifications.municipios[m] ?? false}
-                  onValueChange={() => toggleMunicipio(m)}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor="#FFFFFF"
-                  disabled={!notifications.push}
-                />
-              </View>
-              {index < MUNICIPIOS_FIXOS.length - 1 ? (
-                <View style={styles.subDivider} />
-              ) : null}
-            </View>
-          ))}
-        </View>
 
         <Pressable onPress={handleLogout} style={styles.logoutBtn}>
           <Ionicons name="log-out-outline" size={20} color={colors.danger} />
@@ -291,42 +195,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   itemLabel: { ...typography.bodyBold, color: colors.textPrimary, flex: 1 },
-  itemSubtitle: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  subDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 0,
-    opacity: 0.5,
-  },
-  notifyLabel: {
-    ...typography.micro,
-    color: colors.textMuted,
-    paddingHorizontal: 0,
-    paddingVertical: spacing.xs,
-  },
 
   logoutBtn: {
     flexDirection: 'row',

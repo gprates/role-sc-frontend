@@ -122,7 +122,6 @@ src/
 
 ### Implementadas (local, sem backend)
 - **Favoritos** — persistidos em AsyncStorage
-- **Configurações de notificação** — toggles persistidos em AsyncStorage (push não é efetivamente enviada ainda)
 
 ### UI pronta, mas desabilitada (backend ainda não expõe)
 - Curtir, comentar, "eu vou!" — botões mostram "Em breve"
