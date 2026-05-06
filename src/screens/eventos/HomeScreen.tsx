@@ -71,6 +71,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     setCategoria(null);
   }, []);
 
+  // IMPORTANTE: este header CONTÉM um TextInput (busca). Por isso não pode ser
+  // passado como FUNÇÃO para `ListHeaderComponent` — a FlatList desmonta e
+  // remonta o header a cada mudança de referência da função, fazendo o
+  // TextInput perder foco e o teclado fechar a cada keystroke.
+  // Solução: chamar `renderHeader()` na prop pra passar JSX (elemento) — a
+  // FlatList apenas reconcilia a árvore mantendo a instância do TextInput viva.
   const renderHeader = () => (
     <View style={styles.headerContent}>
       <Text style={styles.greeting}>Olá! 👋</Text>
@@ -85,6 +91,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           value={search}
           onChangeText={setSearch}
           returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="none"
         />
       </View>
 
@@ -184,7 +192,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             }}
           />
         )}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderHeader()}
         ListEmptyComponent={
           loading ? null : (
             <EmptyState
@@ -194,7 +202,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             />
           )
         }
-        ListFooterComponent={renderFooter}
+        ListFooterComponent={renderFooter()}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
@@ -208,6 +216,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         }}
         onEndReachedThreshold={0.4}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       />
     </SafeAreaView>
   );
