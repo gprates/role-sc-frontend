@@ -14,18 +14,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
 import { useAuth } from '@/contexts/AuthContext';
 import { extractErrorMessage } from '@/services/api';
 import { colors, spacing, typography } from '@/theme';
+import { validatePassword } from '@/utils/password';
 
 import { AuthStackScreenProps } from '@/navigation/types';
 
 type Props = AuthStackScreenProps<'Cadastro'>;
 
-export const CadastroScreen: React.FC<Props> = ({ navigation }) => {
+export const CadastroScreen: React.FC<Props> = ({ navigation, route }) => {
   const { signUp, submitting } = useAuth();
   const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email ?? '');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
 
@@ -34,7 +36,9 @@ export const CadastroScreen: React.FC<Props> = ({ navigation }) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return 'Informe um email válido.';
     }
-    if (senha.length < 6) return 'A senha deve ter no mínimo 6 caracteres.';
+    if (!validatePassword(senha).isValid) {
+      return 'A senha precisa cumprir todos os requisitos abaixo.';
+    }
     if (senha !== confirmarSenha) return 'As senhas não coincidem.';
     return null;
   };
@@ -104,6 +108,7 @@ export const CadastroScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setSenha}
               isPassword
             />
+            <PasswordStrengthMeter password={senha} />
             <Input
               icon="lock-closed-outline"
               placeholder="Confirmar senha"

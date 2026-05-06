@@ -123,10 +123,10 @@ src/
 ### Implementadas (local, sem backend)
 - **Favoritos** — persistidos em AsyncStorage
 
-### UI pronta, mas desabilitada (backend ainda não expõe)
+### UI pronta, aguardando endpoints do backend
 - Curtir, comentar, "eu vou!" — botões mostram "Em breve"
 - Editar perfil / alterar senha — formulários prontos, botão desabilitado
-- Recuperar senha — service stub que simula sucesso (quando o endpoint for criado, basta trocar o corpo da função `authService.forgotPassword`)
+- Recuperar senha — fluxo completo (email → código → nova senha) implementado conforme [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md). Aguarda implementação dos 3 endpoints no backend.
 
 ---
 
@@ -161,6 +161,7 @@ O fluxo completo, incluindo setup da conta Expo, configuração de secrets, pass
 Documentos de arquitetura relacionados:
 - [`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md) — builds e publicação
 - [`docs/CONTRATO_VERIFICACAO_EMAIL.md`](./docs/CONTRATO_VERIFICACAO_EMAIL.md) — contrato de integração backend ↔ frontend pra verificação de email
+- [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md) — contrato pra recuperação de senha por código de 6 dígitos
 
 ---
 

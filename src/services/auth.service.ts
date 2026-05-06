@@ -4,12 +4,15 @@ import api from './api';
 import {
   ApiErrorBody,
   ApiErrorCode,
+  ForgotPasswordResponse,
   LoginBody,
   LoginResponse,
   MeResponse,
   RegisterBody,
   RegisterResponse,
   ResendVerificationResponse,
+  ResetPasswordResponse,
+  VerifyResetCodeResponse,
 } from '@/types';
 
 export const authService = {
@@ -41,16 +44,49 @@ export const authService = {
   },
 
   /**
-   * Stub — endpoint ainda não existe no backend.
-   * Simula um delay e sempre retorna sucesso (comportamento acordado com o usuário).
-   * Quando o backend implementar POST /auth/forgot-password, basta descomentar
-   * a chamada real e remover o setTimeout.
+   * Inicia o fluxo de recuperação de senha enviando um código de 6 dígitos
+   * para o email informado. Resposta sempre genérica (antienumeration).
+   * Ver CONTRATO_RECUPERACAO_SENHA.md, seção 4.1.
    */
-  async forgotPassword(_email: string): Promise<{ success: true }> {
-    await new Promise<void>((resolve) => setTimeout(resolve, 800));
-    return { success: true };
-    // const { data } = await api.post('/auth/forgot-password', { email: _email });
-    // return data;
+  async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+    const { data } = await api.post<ForgotPasswordResponse>(
+      '/auth/forgot-password',
+      { email },
+    );
+    return data;
+  },
+
+  /**
+   * Valida o código de 6 dígitos enviado por email. Em caso de sucesso,
+   * retorna um resetToken de uso único (validade 15 min) que é necessário
+   * para de fato trocar a senha em /auth/reset-password.
+   * Ver CONTRATO_RECUPERACAO_SENHA.md, seção 4.2.
+   */
+  async verifyResetCode(
+    email: string,
+    code: string,
+  ): Promise<VerifyResetCodeResponse> {
+    const { data } = await api.post<VerifyResetCodeResponse>(
+      '/auth/verify-reset-code',
+      { email, code },
+    );
+    return data;
+  },
+
+  /**
+   * Troca a senha do usuário, dado um resetToken válido obtido em
+   * verifyResetCode. Ver CONTRATO_RECUPERACAO_SENHA.md, seção 4.3.
+   */
+  async resetPassword(
+    email: string,
+    resetToken: string,
+    novaSenha: string,
+  ): Promise<ResetPasswordResponse> {
+    const { data } = await api.post<ResetPasswordResponse>(
+      '/auth/reset-password',
+      { email, resetToken, novaSenha },
+    );
+    return data;
   },
 };
 

@@ -14,29 +14,54 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { authService } from '@/services/auth.service';
+import { authService, getApiErrorCode } from '@/services/auth.service';
 import { extractErrorMessage } from '@/services/api';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
+import { API_ERROR_CODES } from '@/types';
 
 import { AuthStackScreenProps } from '@/navigation/types';
 
 type Props = AuthStackScreenProps<'RecuperarSenha'>;
 
+/**
+ * Primeira etapa da recuperação de senha:
+ * o usuário informa o email, disparamos POST /auth/forgot-password e
+ * navegamos para a tela ConfirmarCodigo (passando o email no param).
+ *
+ * Comportamento de erro:
+ * - 404 USER_NOT_FOUND → mostra alert com atalho para Cadastro (pré-preenche o email)
+ * - outros erros → alert genérico com extractErrorMessage
+ */
 export const RecuperarSenhaScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [sent, setSent] = useState(false);
 
   const handleSubmit = async () => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       Alert.alert('Atenção', 'Informe um email válido.');
       return;
     }
+    const emailNormalizado = email.trim().toLowerCase();
     setSubmitting(true);
     try {
-      await authService.forgotPassword(email.trim().toLowerCase());
-      setSent(true);
+      await authService.forgotPassword(emailNormalizado);
+      navigation.navigate('ConfirmarCodigo', { email: emailNormalizado });
     } catch (err) {
+      if (getApiErrorCode(err) === API_ERROR_CODES.USER_NOT_FOUND) {
+        Alert.alert(
+          'Email não encontrado',
+          'Não encontramos uma conta com esse email. Quer criar uma?',
+          [
+            { text: 'Tentar outro email', style: 'cancel' },
+            {
+              text: 'Criar conta',
+              onPress: () =>
+                navigation.navigate('Cadastro', { email: emailNormalizado }),
+            },
+          ],
+        );
+        return;
+      }
       Alert.alert('Erro', extractErrorMessage(err));
     } finally {
       setSubmitting(false);
@@ -65,45 +90,28 @@ export const RecuperarSenhaScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.header}>
             <Text style={styles.title}>Recuperar senha</Text>
             <Text style={styles.subtitle}>
-              Vamos enviar um link de recuperação para seu email.
+              Vamos enviar um código de 6 dígitos para o seu email.
             </Text>
           </View>
 
-          {sent ? (
-            <View style={styles.successCard}>
-              <View style={styles.successIconWrap}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={46}
-                  color={colors.primary}
-                />
-              </View>
-              <Text style={styles.successTitle}>Link enviado!</Text>
-              <Text style={styles.successText}>
-                Se o email estiver cadastrado, você receberá o link em alguns
-                minutos.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.form}>
-              <Input
-                icon="mail-outline"
-                placeholder="seu@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={setEmail}
-                returnKeyType="done"
-                onSubmitEditing={handleSubmit}
-              />
-              <Button
-                label="Enviar link de recuperação"
-                onPress={handleSubmit}
-                loading={submitting}
-              />
-            </View>
-          )}
+          <View style={styles.form}>
+            <Input
+              icon="mail-outline"
+              placeholder="seu@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={email}
+              onChangeText={setEmail}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
+            <Button
+              label="Enviar código"
+              onPress={handleSubmit}
+              loading={submitting}
+            />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -125,31 +133,4 @@ const styles = StyleSheet.create({
   title: { ...typography.display, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textSecondary },
   form: { gap: spacing.md, marginTop: spacing.md },
-  successCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  successIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  successTitle: { ...typography.subtitle, color: colors.textPrimary },
-  successText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
 });

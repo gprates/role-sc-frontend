@@ -49,6 +49,10 @@ export interface ApiErrorBody {
  */
 export const API_ERROR_CODES = {
   EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  INVALID_RESET_CODE: 'INVALID_RESET_CODE',
+  INVALID_RESET_TOKEN: 'INVALID_RESET_TOKEN',
+  WEAK_PASSWORD: 'WEAK_PASSWORD',
 } as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];
@@ -58,6 +62,40 @@ export interface ResendVerificationBody {
 }
 
 export interface ResendVerificationResponse {
+  success: true;
+  message: string;
+}
+
+// --- Recuperação de senha ---
+// Ver CONTRATO_RECUPERACAO_SENHA.md para detalhes do fluxo.
+
+export interface ForgotPasswordBody {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: true;
+  message: string;
+}
+
+export interface VerifyResetCodeBody {
+  email: string;
+  code: string;
+}
+
+export interface VerifyResetCodeResponse {
+  success: true;
+  /** Token de uso único usado em /auth/reset-password. Validade: 15 min. */
+  resetToken: string;
+}
+
+export interface ResetPasswordBody {
+  email: string;
+  resetToken: string;
+  novaSenha: string;
+}
+
+export interface ResetPasswordResponse {
   success: true;
   message: string;
 }

@@ -4,9 +4,11 @@ import { CompositeScreenProps } from '@react-navigation/native';
 
 export type AuthStackParamList = {
   Login: undefined;
-  Cadastro: undefined;
+  Cadastro: { email?: string } | undefined;
   RecuperarSenha: undefined;
   VerificarEmail: { email: string };
+  ConfirmarCodigo: { email: string };
+  RedefinirSenha: { email: string; resetToken: string };
 };
 
 export type HomeStackParamList = {
