@@ -4,6 +4,7 @@ import api from './api';
 import {
   ApiErrorBody,
   ApiErrorCode,
+  ChangePasswordResponse,
   ForgotPasswordResponse,
   LoginBody,
   LoginResponse,
@@ -85,6 +86,22 @@ export const authService = {
     const { data } = await api.post<ResetPasswordResponse>(
       '/auth/reset-password',
       { email, resetToken, novaSenha },
+    );
+    return data;
+  },
+
+  /**
+   * Altera a senha do usuário logado. Requer JWT (injetado pelo interceptor)
+   * e a senha atual como prova de identidade.
+   * Ver CONTRATO_ALTERAR_SENHA.md.
+   */
+  async changePassword(
+    senhaAtual: string,
+    novaSenha: string,
+  ): Promise<ChangePasswordResponse> {
+    const { data } = await api.post<ChangePasswordResponse>(
+      '/auth/change-password',
+      { senhaAtual, novaSenha },
     );
     return data;
   },

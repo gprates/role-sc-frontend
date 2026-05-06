@@ -52,6 +52,7 @@ export const API_ERROR_CODES = {
   USER_NOT_FOUND: 'USER_NOT_FOUND',
   INVALID_RESET_CODE: 'INVALID_RESET_CODE',
   INVALID_RESET_TOKEN: 'INVALID_RESET_TOKEN',
+  INVALID_CURRENT_PASSWORD: 'INVALID_CURRENT_PASSWORD',
   WEAK_PASSWORD: 'WEAK_PASSWORD',
 } as const;
 
@@ -96,6 +97,19 @@ export interface ResetPasswordBody {
 }
 
 export interface ResetPasswordResponse {
+  success: true;
+  message: string;
+}
+
+// --- Alteração de senha (logado) ---
+// Ver CONTRATO_ALTERAR_SENHA.md para detalhes do fluxo.
+
+export interface ChangePasswordBody {
+  senhaAtual: string;
+  novaSenha: string;
+}
+
+export interface ChangePasswordResponse {
   success: true;
   message: string;
 }

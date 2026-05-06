@@ -125,8 +125,9 @@ src/
 
 ### UI pronta, aguardando endpoints do backend
 - Curtir, comentar, "eu vou!" — botões mostram "Em breve"
-- Editar perfil / alterar senha — formulários prontos, botão desabilitado
+- Editar perfil — formulário pronto, botão desabilitado
 - Recuperar senha — fluxo completo (email → código → nova senha) implementado conforme [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md). Aguarda implementação dos 3 endpoints no backend.
+- Alterar senha (usuário logado) — implementada conforme [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md). Aguarda 1 endpoint no backend.
 
 ---
 
@@ -162,6 +163,7 @@ Documentos de arquitetura relacionados:
 - [`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md) — builds e publicação
 - [`docs/CONTRATO_VERIFICACAO_EMAIL.md`](./docs/CONTRATO_VERIFICACAO_EMAIL.md) — contrato de integração backend ↔ frontend pra verificação de email
 - [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md) — contrato pra recuperação de senha por código de 6 dígitos
+- [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md) — contrato pra alteração de senha pelo usuário logado
 
 ---
 
