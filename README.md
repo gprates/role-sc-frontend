@@ -125,7 +125,7 @@ src/
 
 ### UI pronta, aguardando endpoints do backend
 - Curtir, comentar, "eu vou!" — botões mostram "Em breve"
-- Editar perfil — formulário pronto, botão desabilitado
+- Editar perfil (apenas nome) — implementada conforme [`docs/CONTRATO_EDITAR_PERFIL.md`](./docs/CONTRATO_EDITAR_PERFIL.md). Aguarda 1 endpoint no backend.
 - Recuperar senha — fluxo completo (email → código → nova senha) implementado conforme [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md). Aguarda implementação dos 3 endpoints no backend.
 - Alterar senha (usuário logado) — implementada conforme [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md). Aguarda 1 endpoint no backend.
 - Upload de avatar — implementada conforme [`docs/CONTRATO_AVATAR.md`](./docs/CONTRATO_AVATAR.md). Aguarda 2 endpoints + bucket S3 no backend.
@@ -166,6 +166,7 @@ Documentos de arquitetura relacionados:
 - [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md) — contrato pra recuperação de senha por código de 6 dígitos
 - [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md) — contrato pra alteração de senha pelo usuário logado
 - [`docs/CONTRATO_AVATAR.md`](./docs/CONTRATO_AVATAR.md) — contrato pra upload de avatar (S3 + presigned URLs)
+- [`docs/CONTRATO_EDITAR_PERFIL.md`](./docs/CONTRATO_EDITAR_PERFIL.md) — contrato pra edição de nome de exibição
 
 ---
 

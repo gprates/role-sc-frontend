@@ -15,28 +15,60 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/contexts/AuthContext';
+import { extractErrorMessage } from '@/services/api';
+import { authService } from '@/services/auth.service';
 import { colors, radius, spacing, typography } from '@/theme';
 
 import { PerfilStackScreenProps } from '@/navigation/types';
 
 type Props = PerfilStackScreenProps<'EditarPerfil'>;
 
+const NOME_MIN_LENGTH = 2;
+const NOME_MAX_LENGTH = 80;
+
 /**
- * Tela de edição do perfil. O endpoint ainda não existe no backend,
- * então o botão de salvar está bloqueado (mostra "Em breve").
- * Quando o backend expor PUT /auth/me, basta trocar o alert por uma chamada
- * real e o refreshUser do AuthContext.
+ * Edição de perfil do usuário logado. Hoje só permite trocar o **nome** —
+ * email é exibido apenas como leitura (decisão de produto, ver
+ * CONTRATO_EDITAR_PERFIL.md). Quando o backend suportar alteração de email
+ * (com novo fluxo de verificação), adicionar aqui.
  */
 export const EditarPerfilScreen: React.FC<Props> = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, patchUser } = useAuth();
   const [nome, setNome] = useState(user?.nome ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSave = () => {
-    Alert.alert(
-      'Em breve',
-      'A edição de perfil será liberada em uma próxima versão.',
-    );
+  const trimmedNome = nome.trim();
+  const nomeAtual = user?.nome ?? '';
+  const houveAlteracao = trimmedNome !== nomeAtual;
+  const nomeValido =
+    trimmedNome.length >= NOME_MIN_LENGTH &&
+    trimmedNome.length <= NOME_MAX_LENGTH;
+
+  const handleSave = async () => {
+    if (!nomeValido) {
+      Alert.alert(
+        'Nome inválido',
+        `O nome deve ter entre ${NOME_MIN_LENGTH} e ${NOME_MAX_LENGTH} caracteres.`,
+      );
+      return;
+    }
+    if (!houveAlteracao) {
+      navigation.goBack();
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await authService.updateProfile(trimmedNome);
+      await patchUser(res.user);
+      Alert.alert('Perfil atualizado', 'Suas informações foram salvas.', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (err) {
+      Alert.alert('Erro', extractErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -45,7 +77,10 @@ export const EditarPerfilScreen: React.FC<Props> = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <Pressable
             onPress={() => navigation.goBack()}
             hitSlop={12}
@@ -55,34 +90,59 @@ export const EditarPerfilScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.backText}>Voltar</Text>
           </Pressable>
 
-          <Text style={styles.title}>Editar perfil</Text>
-
-          <View style={styles.badge}>
-            <Ionicons name="information-circle" size={16} color={colors.info} />
-            <Text style={styles.badgeText}>Funcionalidade em breve</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Editar perfil</Text>
+            <Text style={styles.subtitle}>
+              Atualize seu nome de exibição. Para alterar a foto, volte ao
+              perfil e toque no avatar.
+            </Text>
           </View>
 
           <View style={styles.form}>
-            <Input
-              icon="person-outline"
-              placeholder="Nome completo"
-              value={nome}
-              onChangeText={setNome}
-            />
-            <Input
-              icon="mail-outline"
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
+            <View>
+              <Text style={styles.fieldLabel}>NOME</Text>
+              <Input
+                icon="person-outline"
+                placeholder="Nome completo"
+                autoCapitalize="words"
+                value={nome}
+                onChangeText={setNome}
+                maxLength={NOME_MAX_LENGTH}
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
+                autoFocus
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>EMAIL</Text>
+              <View style={styles.readOnlyField}>
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={colors.textMuted}
+                  style={styles.readOnlyIcon}
+                />
+                <Text style={styles.readOnlyText} numberOfLines={1}>
+                  {user?.email ?? '—'}
+                </Text>
+                <Ionicons
+                  name="lock-closed"
+                  size={14}
+                  color={colors.textMuted}
+                />
+              </View>
+              <Text style={styles.fieldHelp}>
+                O email não pode ser alterado.
+              </Text>
+            </View>
 
             <Button
-              label="Salvar alterações"
+              label={houveAlteracao ? 'Salvar alterações' : 'Voltar'}
               onPress={handleSave}
+              loading={submitting}
+              disabled={!nomeValido}
               style={{ marginTop: spacing.sm }}
-              disabled
             />
           </View>
         </ScrollView>
@@ -101,17 +161,39 @@ const styles = StyleSheet.create({
   },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   backText: { ...typography.body, color: colors.textSecondary },
+  header: { gap: spacing.xs, marginTop: spacing.sm },
   title: { ...typography.display, color: colors.textPrimary },
-  badge: {
+  subtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    lineHeight: 22,
+  },
+  form: { gap: spacing.md, marginTop: spacing.md },
+  fieldLabel: {
+    ...typography.micro,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  readOnlyField: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surfaceMuted,
+    minHeight: 52,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    backgroundColor: colors.surfaceMuted,
     borderRadius: radius.pill,
-    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  badgeText: { ...typography.captionBold, color: colors.info },
-  form: { gap: spacing.md, marginTop: spacing.md },
+  readOnlyIcon: { marginRight: spacing.sm },
+  readOnlyText: {
+    flex: 1,
+    ...typography.body,
+    color: colors.textMuted,
+  },
+  fieldHelp: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 4,
+    marginLeft: spacing.md,
+  },
 });

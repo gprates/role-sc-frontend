@@ -13,6 +13,7 @@ import {
   RegisterResponse,
   ResendVerificationResponse,
   ResetPasswordResponse,
+  UpdateProfileResponse,
   VerifyResetCodeResponse,
 } from '@/types';
 
@@ -103,6 +104,17 @@ export const authService = {
       '/auth/change-password',
       { senhaAtual, novaSenha },
     );
+    return data;
+  },
+
+  /**
+   * Atualiza o perfil do usuário logado. Por enquanto só permite trocar o nome
+   * — email não pode ser alterado (decisão de produto, ver CONTRATO_EDITAR_PERFIL.md).
+   */
+  async updateProfile(nome: string): Promise<UpdateProfileResponse> {
+    const { data } = await api.patch<UpdateProfileResponse>('/users/me', {
+      nome,
+    });
     return data;
   },
 };

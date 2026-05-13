@@ -121,3 +121,15 @@ export interface ChangePasswordResponse {
   success: true;
   message: string;
 }
+
+// --- Edição do perfil (logado) ---
+// Ver CONTRATO_EDITAR_PERFIL.md para detalhes do fluxo.
+
+export interface UpdateProfileBody {
+  nome: string;
+}
+
+export interface UpdateProfileResponse {
+  success: true;
+  user: UserPublic;
+}
