@@ -1,3 +1,8 @@
+// Importamos do submódulo `legacy` porque a nova API (default) do
+// expo-file-system SDK 54 não inclui `uploadAsync` ainda. Ver:
+// https://docs.expo.dev/versions/latest/sdk/filesystem-legacy/
+import * as FileSystem from 'expo-file-system/legacy';
+
 import api from './api';
 import {
   AVATAR_ACCEPTED_MIME_TYPES,
@@ -33,15 +38,8 @@ export class AvatarInvalidTypeError extends Error {
 const isAcceptedMime = (mime: string): mime is AvatarMimeType =>
   (AVATAR_ACCEPTED_MIME_TYPES as readonly string[]).includes(mime);
 
-/**
- * Inferência conservadora de MIME type quando o image picker não traz a info.
- * Olha a extensão do filename ou da uri.
- */
-const inferMimeType = (asset: PickedAsset): AvatarMimeType | null => {
-  if (asset.mimeType && isAcceptedMime(asset.mimeType)) return asset.mimeType;
-  const source = asset.fileName ?? asset.uri;
-  const ext = source.split('.').pop()?.toLowerCase();
-  switch (ext) {
+const extToMime = (ext: string | undefined): AvatarMimeType | null => {
+  switch (ext?.toLowerCase()) {
     case 'jpg':
     case 'jpeg':
       return 'image/jpeg';
@@ -54,6 +52,25 @@ const inferMimeType = (asset: PickedAsset): AvatarMimeType | null => {
     default:
       return null;
   }
+};
+
+/**
+ * Inferência conservadora de MIME type. Prioridade:
+ * 1. `mimeType` do asset, se for um dos aceitos
+ * 2. Normalização: `image/jpg` (variante errada comum) → `image/jpeg`
+ * 3. Extensão do `fileName` (mais confiável que a uri, que em Android pode
+ *    ser `content://media/external/images/123` sem extensão)
+ * 4. Extensão da `uri`
+ */
+const inferMimeType = (asset: PickedAsset): AvatarMimeType | null => {
+  if (asset.mimeType) {
+    if (asset.mimeType === 'image/jpg') return 'image/jpeg';
+    if (isAcceptedMime(asset.mimeType)) return asset.mimeType;
+  }
+  const fromFileName = extToMime(asset.fileName?.split('.').pop());
+  if (fromFileName) return fromFileName;
+  const fromUri = extToMime(asset.uri.split('?')[0]?.split('.').pop());
+  return fromUri;
 };
 
 export const avatarService = {
@@ -75,18 +92,28 @@ export const avatarService = {
       throw new AvatarInvalidTypeError(asset.mimeType ?? 'desconhecido');
     }
 
-    // Validação client-side de tamanho. fileSize pode ser null em alguns
-    // pickers (ex: GIF da galeria em alguns devices); nesse caso pulamos a
-    // validação local e deixamos o backend rejeitar.
-    if (
-      asset.fileSize !== null &&
-      asset.fileSize !== undefined &&
-      asset.fileSize > AVATAR_MAX_SIZE_BYTES
-    ) {
-      throw new AvatarTooLargeError(asset.fileSize);
+    // Descobrir o tamanho REAL do arquivo a partir do filesystem.
+    // NÃO confiar em `asset.fileSize` do image picker: no Android, com URIs
+    // `content://` (galeria), esse valor pode vir nulo ou diferente do
+    // tamanho real que o `FileSystem.uploadAsync` vai mandar pro S3. Se o
+    // backend assinou com um Content-Length diferente, S3 retorna 403
+    // SignatureDoesNotMatch.
+    const fileInfo = await FileSystem.getInfoAsync(asset.uri, { size: true });
+    if (!fileInfo.exists) {
+      throw new Error('Arquivo selecionado não foi encontrado.');
+    }
+    const sizeBytes = fileInfo.size;
+
+    if (sizeBytes > AVATAR_MAX_SIZE_BYTES) {
+      throw new AvatarTooLargeError(sizeBytes);
     }
 
-    const sizeBytes = asset.fileSize ?? 0;
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `[avatar] preparando upload: mime=${mimeType} size=${sizeBytes}B uri=${asset.uri.slice(0, 60)}...`,
+      );
+    }
 
     // Etapa 1: pedir presigned URL ao backend.
     const { data: uploadData } = await api.post<RequestAvatarUploadResponse>(
@@ -94,18 +121,44 @@ export const avatarService = {
       { contentType: mimeType, sizeBytes },
     );
 
-    // Etapa 2: ler o blob da imagem (file:// uri do picker → fetch funciona em RN).
-    const blob = await (await fetch(asset.uri)).blob();
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `[avatar] presigned URL recebida, headers=${JSON.stringify(uploadData.headers)}`,
+      );
+    }
 
-    const putResponse = await fetch(uploadData.uploadUrl, {
-      method: 'PUT',
-      headers: uploadData.headers,
-      body: blob,
-    });
+    // Etapa 2: PUT direto no S3 via expo-file-system.
+    //
+    // Por que NÃO usar `fetch(uri).blob() + fetch PUT` aqui?
+    // - URIs `content://` (galeria do Android) não são bem suportadas por
+    //   `fetch().blob()` em algumas versões do RN
+    // - Quando body é Blob, o RN reescreve o header `Content-Type` para
+    //   o tipo interno do blob — que pode diferir do que foi usado pra
+    //   assinar a presigned URL → S3 responde 403 SignatureDoesNotMatch
+    //
+    // `FileSystem.uploadAsync` em modo BINARY_CONTENT faz stream binário
+    // do arquivo respeitando exatamente os headers passados.
+    const uploadResult = await FileSystem.uploadAsync(
+      uploadData.uploadUrl,
+      asset.uri,
+      {
+        httpMethod: 'PUT',
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        headers: uploadData.headers,
+      },
+    );
 
-    if (!putResponse.ok) {
+    if (uploadResult.status < 200 || uploadResult.status >= 300) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[avatar] S3 PUT falhou (HTTP ${uploadResult.status})`,
+          uploadResult.body,
+        );
+      }
       throw new Error(
-        `Falha no upload pra S3 (HTTP ${putResponse.status}). Tente novamente.`,
+        `Falha no upload pra S3 (HTTP ${uploadResult.status}). Tente novamente.`,
       );
     }
 
