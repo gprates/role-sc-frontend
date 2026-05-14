@@ -12,9 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { Input } from '@/components/Input';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGoogleSignIn } from '@/hooks/useGoogleSignIn';
 import { extractErrorMessage } from '@/services/api';
 import { getApiErrorCode } from '@/services/auth.service';
 import { colors, spacing, typography } from '@/theme';
@@ -26,6 +28,11 @@ type Props = AuthStackScreenProps<'Login'>;
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { signIn, submitting } = useAuth();
+  const {
+    signInWithGoogle,
+    loading: googleLoading,
+    notConfigured: googleNotConfigured,
+  } = useGoogleSignIn();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
 
@@ -102,6 +109,14 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.dividerText}>OU</Text>
               <View style={styles.dividerLine} />
             </View>
+
+            {!googleNotConfigured ? (
+              <GoogleSignInButton
+                onPress={() => void signInWithGoogle()}
+                loading={googleLoading}
+                disabled={submitting}
+              />
+            ) : null}
 
             <View style={styles.bottomRow}>
               <Text style={styles.bottomText}>Novo por aqui? </Text>

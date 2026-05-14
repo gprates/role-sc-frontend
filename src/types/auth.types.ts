@@ -133,3 +133,23 @@ export interface UpdateProfileResponse {
   success: true;
   user: UserPublic;
 }
+
+// --- Login com Google ---
+// Ver CONTRATO_LOGIN_GOOGLE.md para detalhes do fluxo.
+
+export interface GoogleLoginBody {
+  /** id_token (JWT) emitido pelo Google após OAuth bem-sucedido no app. */
+  idToken: string;
+}
+
+export interface GoogleLoginResponse {
+  success: true;
+  token: string;
+  user: UserPublic;
+  /**
+   * Indica se essa requisição CRIOU uma nova conta (true) ou se foi
+   * login de um usuário existente (false). Pode ser útil pro app
+   * decidir se mostra um toast tipo "Bem-vindo!" ou "Bem-vindo de volta".
+   */
+  isNewUser: boolean;
+}

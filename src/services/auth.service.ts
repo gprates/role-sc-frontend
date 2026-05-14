@@ -6,6 +6,7 @@ import {
   ApiErrorCode,
   ChangePasswordResponse,
   ForgotPasswordResponse,
+  GoogleLoginResponse,
   LoginBody,
   LoginResponse,
   MeResponse,
@@ -20,6 +21,18 @@ import {
 export const authService = {
   async login(body: LoginBody): Promise<LoginResponse> {
     const { data } = await api.post<LoginResponse>('/auth/login', body);
+    return data;
+  },
+
+  /**
+   * Troca um id_token do Google por um JWT nosso. Cria a conta se ainda
+   * não existir; se já existir um user com o mesmo email, faz o linking
+   * automático (ver CONTRATO_LOGIN_GOOGLE.md, seção 4.1).
+   */
+  async googleLogin(idToken: string): Promise<GoogleLoginResponse> {
+    const { data } = await api.post<GoogleLoginResponse>('/auth/google', {
+      idToken,
+    });
     return data;
   },
 

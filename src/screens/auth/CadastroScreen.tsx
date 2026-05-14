@@ -13,9 +13,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { Input } from '@/components/Input';
 import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGoogleSignIn } from '@/hooks/useGoogleSignIn';
 import { extractErrorMessage } from '@/services/api';
 import { colors, spacing, typography } from '@/theme';
 import { validatePassword } from '@/utils/password';
@@ -26,6 +28,11 @@ type Props = AuthStackScreenProps<'Cadastro'>;
 
 export const CadastroScreen: React.FC<Props> = ({ navigation, route }) => {
   const { signUp, submitting } = useAuth();
+  const {
+    signInWithGoogle,
+    loading: googleLoading,
+    notConfigured: googleNotConfigured,
+  } = useGoogleSignIn();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState(route.params?.email ?? '');
   const [senha, setSenha] = useState('');
@@ -85,6 +92,21 @@ export const CadastroScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
 
           <View style={styles.form}>
+            {!googleNotConfigured ? (
+              <>
+                <GoogleSignInButton
+                  onPress={() => void signInWithGoogle()}
+                  loading={googleLoading}
+                  disabled={submitting}
+                />
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>OU</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+              </>
+            ) : null}
+
             <Input
               icon="person-outline"
               placeholder="Nome completo"
@@ -157,6 +179,13 @@ const styles = StyleSheet.create({
   title: { ...typography.display, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textSecondary },
   form: { gap: spacing.md, marginTop: spacing.md },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { ...typography.micro, color: colors.textMuted },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'center',

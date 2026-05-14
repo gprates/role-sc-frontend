@@ -29,6 +29,12 @@ interface AuthContextValue {
    * deve navegar para VerificarEmail e orientar o usuário a checar a caixa.
    */
   signUp: (nome: string, email: string, senha: string) => Promise<void>;
+  /**
+   * Autentica o usuário usando um id_token vindo do Google OAuth.
+   * Cria a conta se não existir, ou linka automaticamente com user
+   * existente de mesmo email. Ver CONTRATO_LOGIN_GOOGLE.md.
+   */
+  signInWithGoogle: (googleIdToken: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
   /**
@@ -105,6 +111,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [],
   );
 
+  const signInWithGoogle = useCallback(async (googleIdToken: string) => {
+    setSubmitting(true);
+    try {
+      const res = await authService.googleLogin(googleIdToken);
+      await storage.set(STORAGE_KEYS.token, res.token);
+      await storage.set(STORAGE_KEYS.user, res.user);
+      setToken(res.token);
+      setUser(res.user);
+    } finally {
+      setSubmitting(false);
+    }
+  }, []);
+
   const refreshUser = useCallback(async () => {
     try {
       const res = await authService.getMe();
@@ -132,6 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       submitting,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
       refreshUser,
       patchUser,
@@ -143,6 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       submitting,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
       refreshUser,
       patchUser,

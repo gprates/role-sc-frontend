@@ -129,6 +129,7 @@ src/
 - Recuperar senha — fluxo completo (email → código → nova senha) implementado conforme [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md). Aguarda implementação dos 3 endpoints no backend.
 - Alterar senha (usuário logado) — implementada conforme [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md). Aguarda 1 endpoint no backend.
 - Upload de avatar — implementada conforme [`docs/CONTRATO_AVATAR.md`](./docs/CONTRATO_AVATAR.md). Aguarda 2 endpoints + bucket S3 no backend.
+- Login com Google — implementada conforme [`docs/CONTRATO_LOGIN_GOOGLE.md`](./docs/CONTRATO_LOGIN_GOOGLE.md). Aguarda 1 endpoint no backend + setup do Google Cloud Console.
 
 ---
 
@@ -167,6 +168,7 @@ Documentos de arquitetura relacionados:
 - [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md) — contrato pra alteração de senha pelo usuário logado
 - [`docs/CONTRATO_AVATAR.md`](./docs/CONTRATO_AVATAR.md) — contrato pra upload de avatar (S3 + presigned URLs)
 - [`docs/CONTRATO_EDITAR_PERFIL.md`](./docs/CONTRATO_EDITAR_PERFIL.md) — contrato pra edição de nome de exibição
+- [`docs/CONTRATO_LOGIN_GOOGLE.md`](./docs/CONTRATO_LOGIN_GOOGLE.md) — contrato pra login com Google (OAuth2 / OIDC)
 
 ---
 
