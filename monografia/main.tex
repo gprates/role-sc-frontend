@@ -1,0 +1,125 @@
+\documentclass[
+	% -- opções da classe memoir --
+	12pt,				% tamanho da fonte
+	openright,			% capítulos começam em pág ímpar (insere página vazia caso preciso)
+	oneside,			% para impressão em um lado. Oposto a twoside, verso e anverso
+	a4paper,			% tamanho do papel.
+	% -- opções da classe abntex2 --
+	chapter=TITLE,		% títulos de capítulos convertidos em letras maiúsculas
+	section=TITLE,		% títulos de seções convertidos em letras maiúsculas
+	%subsection=TITLE,	% títulos de subseções convertidos em letras maiúsculas
+	%subsubsection=TITLE,% títulos de subsubseções convertidos em letras maiúsculas
+	% -- opções do pacote babel --
+	english,			% idioma adicional para hifenização
+	%french,				% idioma adicional para hifenização
+	%spanish,			% idioma adicional para hifenização
+	brazil,				% o último idioma é o principal do documento
+	]{styles/abntex2}
+
+% \usepackage[alf]{styles/abntex2cite}	% Citações padrão ABNT
+
+\usepackage[alf,
+abnt-emphasize = bf, % destaca o titulo da revista ou livro em negrito;
+abnt-etal-list = 0, % trabalhos com mais de 3 autores recebem et al.,;
+%abnt-etal-text = it, % escreve o et al., em italico;
+abnt-and-type = e, % usa o carater '&' no lugar de 'e' para mais de um autor;
+abnt-last-names = abnt, % trata sobrenomes 'estritamente' conforme a ABNT; e
+abnt-repeated-author-omit = no, % autores com + de uma entrada recebem '__.'
+%bibjustify
+]{styles/abntex2cite}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{lastpage}
+\usepackage{times}
+\usepackage{graphicx}
+
+\usepackage{tabularx}
+\usepackage{makecell}
+\usepackage{lmodern}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{justification   = raggedright,
+              singlelinecheck = false}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+
+
+% \usepackage{natbib}
+
+\usepackage{xcolor}
+\usepackage{enumerate}
+
+\usepackage{styles/ttc_univali}
+
+\title{Trabalho Técnico Científico}
+\author{Gabriel Sodré da Silva Prates}
+\date{Novembro, 2026}
+
+\sloppy
+
+\newcommand{\citet}{\citeonline}
+
+\usepackage{pgfplots}
+
+% Estilo para trechos de código TypeScript (frontend e backend Node).
+\lstdefinestyle{ts-style}{
+  language=Java, % usa highlight de Java como fallback (mais próximo de TS)
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  stringstyle=\color{orange},
+  commentstyle=\color{gray},
+  backgroundcolor=\color{white},
+  frame=single,
+  breaklines=true,
+  showstringspaces=false
+}
+
+\lstdefinestyle{python-style}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  stringstyle=\color{orange},
+  commentstyle=\color{gray},
+  backgroundcolor=\color{white},
+  frame=single,
+  breaklines=true,
+  showstringspaces=false
+}
+
+\begin{document}
+
+\pretextual
+\input{info.tex} \clearpage
+
+
+\textual % Indica inicio dos elementos textuais
+\chapter{Modelo de negócios}
+\input{modelonegocio.tex}
+
+\chapter{Especificação do Produto}
+\input{especificacao.tex}
+
+\chapter{Desenvolvimento Parcial}
+\input{desenvolvimento}
+
+\chapter{Resultados parciais}
+\input{resultados}
+
+\chapter{Análise crítica}
+\input{analise}
+
+\pagestyle{simple} % remove o cabecalho
+
+
+
+\postextual
+
+\bibliography{referencias}
+
+% Glossário (pós-textual, depois das referências — ABNT NBR 14724/2011)
+\input{glossario}
+
+\end{document}

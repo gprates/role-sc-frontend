@@ -1,0 +1,40 @@
+% Glossário do TCC do Rolê SC.
+% Posicionamento no main.tex: depois de \bibliography{referencias},
+% dentro do bloco \postextual (ordem ABNT NBR 14724/2011).
+% Comando para inclusão: \input{glossario.tex}
+
+\pretextualchapter{Glossário}
+
+\begin{description}
+
+\item[\textit{Antienumeration}] Padrão de segurança em que respostas a entradas inexistentes (\textit{e.g.}, \textit{e-mail} não cadastrado) são mantidas idênticas às de entradas válidas, evitando que um atacante descubra usuários cadastrados por meio de respostas distintas.
+
+\item[\textit{API Key}] Cabeçalho HTTP (\texttt{x-api-key}) validado pelo \textit{API Gateway} antes da invocação da \textit{Lambda}, utilizado para aplicar \textit{throttling} e quota.
+
+\item[\textit{AsyncStorage}] \textit{API} de armazenamento \textit{key-value} persistente do \textit{React Native}, utilizada no aplicativo para guardar o \textit{JWT}, o usuário autenticado e a lista de favoritos.
+
+\item[\textit{Cold start}] Tempo adicional de inicialização sofrido por uma \textit{Lambda} quando não há contêiner aquecido disponível, antes do código de usuário começar a executar.
+
+\item[Evento] Atividade pública (cultural, esportiva, gastronômica, religiosa ou comunitária) realizada em um dos seis municípios-alvo do projeto, identificada e estruturada pelo \textit{pipeline} de extração via \textit{LLM}.
+
+\item[\textit{id\_token}] Credencial no formato \textit{JWT}, assinada em \textit{RS256}, emitida pelo \textit{Google} após autenticação \textit{OAuth} bem-sucedida; o \textit{backend} valida sua assinatura e troca-a pelo \textit{JWT} do próprio sistema.
+
+\item[\textit{isEvent}] Atributo booleano definido pelo processador de linguagem natural para cada documento bruto: \texttt{true} indica que a página foi classificada como um evento e fica visível no aplicativo; \texttt{false} indica notícia comum, descartada pela \textit{API}.
+
+\item[\textit{JWT}] Credencial \textit{stateless} no formato \textit{JSON Web Token}, assinada em \textit{HS256}, que prova a identidade do usuário ao \textit{backend} por sete dias após o \textit{login}.
+
+\item[\textit{Linking} automático] Comportamento do \textit{login} com \textit{Google} em que, se o \textit{e-mail} do \textit{id\_token} já corresponde a uma conta existente, o identificador \textit{googleId} é vinculado a essa conta sem solicitar senha.
+
+\item[\textit{Pipeline}] Sequência de componentes \textit{serverless} do Rolê SC que executa, de forma encadeada e idempotente, a coleta dos sites oficiais, o armazenamento bruto e a extração estruturada de eventos.
+
+\item[\textit{Presigned URL}] \textit{URL} temporária do \textit{Amazon S3} (com tempo de vida de cinco minutos) assinada pelo \textit{backend}, que autoriza o aplicativo a executar um \textit{PUT} diretamente no \textit{bucket} sem que o conteúdo do arquivo passe pelo servidor.
+
+\item[\textit{Raw crawl}] Documento bruto (\textit{HTML} ou texto) capturado de um \textit{site} público pelo \textit{web crawler} e armazenado na coleção \texttt{raw\_crawls} antes do processamento de linguagem natural.
+
+\item[\textit{Serverless}] Modelo de execução em nuvem no qual o provedor gerencia integralmente a infraestrutura subjacente, e o consumidor é cobrado apenas pelo tempo efetivo de execução das funções, sem provisionar servidores.
+
+\item[\textit{Strength meter}] Componente visual que apresenta ao usuário, em tempo real, quais requisitos de força da senha (comprimento, presença de caracteres especiais, dígitos etc.) já foram atendidos.
+
+\item[\textit{TTL Index}] Índice especial do \textit{MongoDB} que remove automaticamente, em segundo plano, documentos cujo campo de expiração já passou, utilizado neste trabalho para tokens efêmeros de verificação de \textit{e-mail} e recuperação de senha.
+
+\end{description}

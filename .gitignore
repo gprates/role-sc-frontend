@@ -16,3 +16,20 @@ web-build/
 .env.*.local
 
 expo-env.d.ts
+
+# Material de referência local (TCC do Thiago Zipper Melato usado como modelo
+# de template). Não versionar — uso interno apenas.
+monografia-referencia/
+
+# Saídas auxiliares do LaTeX dentro de monografia/ (regras detalhadas no
+# .gitignore daquele subdiretório).
+monografia/*.aux
+monografia/*.bbl
+monografia/*.blg
+monografia/*.log
+monografia/*.lof
+monografia/*.lot
+monografia/*.out
+monografia/*.synctex.gz
+monografia/*.toc
+monografia/main.pdf
