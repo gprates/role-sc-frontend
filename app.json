@@ -18,7 +18,18 @@
       "adaptiveIcon": {
         "backgroundColor": "#1E88E5"
       },
-      "package": "com.rolesc.app"
+      "package": "com.rolesc.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "com.googleusercontent.apps.105263256720-ll69837f20fsd4m7n47haid9pj3c38ja"
+            }
+          ]
+        }
+      ]
     },
     "plugins": [
       [

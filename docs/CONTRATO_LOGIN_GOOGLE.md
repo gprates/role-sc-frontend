@@ -89,15 +89,21 @@ Precisa criar **DOIS** clients no mesmo projeto:
 
 > ⚠️ O Android Client ID **NÃO TEM** "client secret" — Google entende que apps mobile não conseguem manter segredo, e o SHA-1 fingerprint serve como prova de autenticidade.
 
-### 3.4 Backend só precisa do WEB_CLIENT_ID
+### 3.4 Quais Client IDs o backend deve validar
 
-O backend valida o id_token contra o `audience` esperado. Em **ambos** os fluxos (Expo Go dev e Android prod), o **audience do id_token será o WEB_CLIENT_ID**, porque é o que está sendo usado como `clientId` na request OAuth.
+A regra real é simples: **o `audience` do id_token é exatamente o `client_id` que foi usado na request OAuth pelo cliente**.
 
-> 💡 **Pra dev (Expo Go):** o frontend usa direto o `WEB_CLIENT_ID` na request, então o audience é `WEB_CLIENT_ID`.
->
-> **Pra prod (APK):** o frontend usa o `ANDROID_CLIENT_ID` na request, mas como Android usa client confidencial implícito via SHA-1, o `audience` do id_token retornado **continua sendo o WEB_CLIENT_ID** (regra estranha da Google, mas é assim). Por isso o backend só valida contra o WEB_CLIENT_ID.
+| Cenário | `client_id` na request | `audience` do id_token |
+|---------|-------------------------|------------------------|
+| Expo Go (dev), via `auth.expo.io` | `WEB_CLIENT_ID` | `WEB_CLIENT_ID` |
+| APK próprio (prod), via scheme `rolesc://` | `ANDROID_CLIENT_ID` | `ANDROID_CLIENT_ID` |
 
-**Variável de ambiente do backend:** `GOOGLE_WEB_CLIENT_ID` (mesmo valor que o frontend usa).
+**Decisão para o Rolê SC:** **suportar ambos ambientes** (Expo Go pra dev rápido, APK pra produção). Ambos os Client IDs são válidos.
+
+Portanto:
+- **Backend valida audience contra `[ANDROID_CLIENT_ID, WEB_CLIENT_ID]`** (array — `google-auth-library` aceita)
+- Variáveis de ambiente do backend: **`GOOGLE_ANDROID_CLIENT_ID`** e **`GOOGLE_WEB_CLIENT_ID`** (mesmos valores que o frontend usa)
+- Se uma das duas envs não estiver setada, filtrar do array antes de passar pro `verifyIdToken` (ver código na seção 5.1)
 
 ---
 
@@ -203,13 +209,26 @@ Troca um id_token do Google por um JWT nosso. Endpoint **público** (não autent
 
 **Lógica:**
 
-1. Validar o id_token usando `google-auth-library`:
+1. Validar o id_token usando `google-auth-library` passando ARRAY de audiences (Android para APK próprio, Web para Expo Go via proxy):
    ```ts
    import { OAuth2Client } from 'google-auth-library';
+
    const client = new OAuth2Client();
+
+   // Aceita id_token vindo de QUALQUER um dos clients configurados.
+   // Em dev (Expo Go) o aud será o WEB; em prod (APK) será o ANDROID.
+   const audiences = [
+     process.env.GOOGLE_ANDROID_CLIENT_ID,
+     process.env.GOOGLE_WEB_CLIENT_ID,
+   ].filter((v): v is string => Boolean(v));
+
+   if (audiences.length === 0) {
+     throw new Error('Nenhum Google Client ID configurado.');
+   }
+
    const ticket = await client.verifyIdToken({
      idToken,
-     audience: process.env.GOOGLE_WEB_CLIENT_ID,
+     audience: audiences,
    });
    const payload = ticket.getPayload();
    if (!payload) throw new Error('Invalid token');
@@ -292,14 +311,15 @@ Já retorna o user completo. O `avatarUrl` populado pelo Google funciona como qu
 
 | Variável | Descrição | Exemplo |
 |----------|-----------|---------|
-| `GOOGLE_WEB_CLIENT_ID` | OAuth Web Client ID do Google Console (mesmo que o frontend usa) | `1234567890-abcdefg.apps.googleusercontent.com` |
+| `GOOGLE_ANDROID_CLIENT_ID` | OAuth Android Client ID (mesmo valor que `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` do frontend) | `1234567890-abcdefg.apps.googleusercontent.com` |
+| `GOOGLE_WEB_CLIENT_ID` | OAuth Web Client ID (mesmo valor que `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` do frontend) | `9876543210-xyzwvut.apps.googleusercontent.com` |
 
 ### 6.2 Frontend (já configurado)
 
 | Variável | Descrição |
 |----------|-----------|
-| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Mesmo valor do backend |
-| `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` | Android Client ID (criar no GCP — ver seção 3.3) |
+| `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` | Android Client ID — usado em APK próprio |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Web Client ID — usado no Expo Go via proxy `auth.expo.io` |
 
 ---
 
@@ -322,7 +342,7 @@ Nenhuma alteração na infra AWS. Google Sign-In acontece direto entre o app, o 
   - [ ] `POST /auth/google` (público)
   - [ ] Schema do response de `/auth/login` aceita o novo `code: PASSWORD_NOT_SET`
 - [ ] Atualizar `src/schemas/auth.schemas.ts` com schema do body `/auth/google`
-- [ ] Adicionar `GOOGLE_WEB_CLIENT_ID` no `template.yaml` e `.env`
+- [ ] Adicionar `GOOGLE_ANDROID_CLIENT_ID` e `GOOGLE_WEB_CLIENT_ID` no `template.yaml` e `.env` (mesmos valores que estão no frontend). O `verifyIdToken` deve aceitar AMBOS como audiences válidos.
 - [ ] **Setup manual no Google Cloud Console**: seguir seção 3 deste documento (criar projeto, OAuth Consent Screen, dois Client IDs)
 - [ ] Atualizar `CONTEXTO_API_BACKEND.md` com o novo endpoint
 - [ ] Testar manualmente:
@@ -361,7 +381,7 @@ Comportamento esperado do app frente aos códigos do backend:
 ## 10. Princípios
 
 - **id_token SEMPRE validado criptograficamente** server-side. Nunca confiar no payload sem `verifyIdToken`.
-- **Audience correto** — sempre validar contra `GOOGLE_WEB_CLIENT_ID`, não contra outros valores.
+- **Audience correto** — sempre validar contra a lista de Client IDs configurados (Android + Web), via array no `verifyIdToken`. Nunca aceitar audience de algum client não conhecido.
 - **`email_verified` obrigatório no id_token** — se vier false, recusar (caso de borda, raro).
 - **Linking automático só quando seguro** — o critério é "mesmo email + email_verified=true no Google". Se essas duas condições não baterem, NÃO linkar.
 - **Senha vira opcional, não nullable em código** — usar `senha?: string` (TypeScript). Nas queries, validar `if (!user.senha)` antes de comparar com bcrypt.
