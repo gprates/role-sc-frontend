@@ -18,18 +18,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#1E88E5"
       },
-      "package": "com.rolesc.app",
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "category": ["BROWSABLE", "DEFAULT"],
-          "data": [
-            {
-              "scheme": "com.googleusercontent.apps.105263256720-ll69837f20fsd4m7n47haid9pj3c38ja"
-            }
-          ]
-        }
-      ]
+      "package": "com.rolesc.app"
     },
     "plugins": [
       [
@@ -37,6 +26,12 @@
         {
           "photosPermission": "Permita acesso às suas fotos para enviar uma foto de perfil.",
           "cameraPermission": "Permita acesso à câmera para tirar uma foto de perfil."
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.placeholder-not-used"
         }
       ]
     ],

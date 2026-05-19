@@ -1,30 +1,41 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { extractErrorMessage } from '@/services/api';
 
-// Necessário pra finalizar o fluxo OAuth quando o user é redirecionado de
-// volta pro app a partir do browser do sistema. Deve ser chamado uma vez no
-// nível do módulo (não dentro de um componente).
-WebBrowser.maybeCompleteAuthSession();
-
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 
-if (!WEB_CLIENT_ID && !ANDROID_CLIENT_ID && __DEV__) {
+if (!WEB_CLIENT_ID && __DEV__) {
   // eslint-disable-next-line no-console
   console.warn(
-    '[GoogleSignIn] Nenhum CLIENT_ID configurado. Login com Google vai falhar até preencher EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID e/ou EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID no .env.',
+    '[GoogleSignIn] EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID não configurado. ' +
+      'Login com Google vai falhar até preencher no .env / EAS secret.',
   );
+}
+
+// Configuração global da lib. Roda uma vez na carga do módulo.
+// O Android NÃO precisa de androidClientId aqui — a identificação do Client
+// Android acontece via SHA-1 do APK (já registrado no Google Cloud Console).
+// O webClientId é OBRIGATÓRIO porque é o que permite emitir o id_token (o
+// Android Client sozinho só emite access_token).
+if (WEB_CLIENT_ID) {
+  GoogleSignin.configure({
+    webClientId: WEB_CLIENT_ID,
+    scopes: ['openid', 'email', 'profile'],
+  });
 }
 
 interface UseGoogleSignInReturn {
   /** Dispara o fluxo de login. Erros são tratados internamente via Alert. */
   signInWithGoogle: () => Promise<void>;
-  /** True enquanto o browser estiver aberto ou a request pro backend em curso. */
+  /** True enquanto o modal nativo estiver aberto ou a request pro backend em curso. */
   loading: boolean;
   /** True se a configuração de OAuth não estiver pronta (sem CLIENT_ID). */
   notConfigured: boolean;
@@ -34,14 +45,15 @@ export const useGoogleSignIn = (): UseGoogleSignInReturn => {
   const { signInWithGoogle: applyGoogleAuth } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const [, , promptAsync] = Google.useIdTokenAuthRequest({
-    webClientId: WEB_CLIENT_ID,
-    androidClientId: ANDROID_CLIENT_ID,
-    // Escopos: openid + email + profile. Pedimos só o necessário.
-    scopes: ['openid', 'email', 'profile'],
-  });
+  // Limpeza preventiva: se o app ficou com sessão Google "dangling" de uma
+  // tentativa anterior, garantimos um estado limpo antes do próximo login.
+  useEffect(() => {
+    GoogleSignin.signOut().catch(() => {
+      // Ignora silenciosamente — não tem sessão, não tem problema.
+    });
+  }, []);
 
-  const notConfigured = !WEB_CLIENT_ID && !ANDROID_CLIENT_ID;
+  const notConfigured = !WEB_CLIENT_ID;
 
   const signInWithGoogle = useCallback(async () => {
     if (notConfigured) {
@@ -54,25 +66,19 @@ export const useGoogleSignIn = (): UseGoogleSignInReturn => {
 
     setLoading(true);
     try {
-      // 1. Abrir o browser do sistema. O Expo cuida do redirect URI:
-      //    - dev (Expo Go): auth.expo.io/@<owner>/<slug>
-      //    - prod (APK próprio): rolesc://...
-      const result = await promptAsync();
+      // Garantir que o Google Play Services está disponível e atualizado.
+      // Sem isso, signIn() falha em devices antigos / com Play Services
+      // desatualizado e a mensagem de erro é confusa.
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-      if (result.type === 'cancel' || result.type === 'dismiss') {
-        // Usuário fechou o browser ou cancelou. Sem erro.
+      const response = await GoogleSignin.signIn();
+
+      if (!isSuccessResponse(response)) {
+        // SIGN_IN_CANCELLED entra aqui também — usuário fechou a modal.
         return;
       }
 
-      if (result.type !== 'success') {
-        Alert.alert(
-          'Não foi possível entrar',
-          'Houve um problema na autenticação com o Google. Tente novamente.',
-        );
-        return;
-      }
-
-      const idToken = result.params.id_token;
+      const idToken = response.data.idToken;
       if (!idToken) {
         Alert.alert(
           'Não foi possível entrar',
@@ -81,14 +87,29 @@ export const useGoogleSignIn = (): UseGoogleSignInReturn => {
         return;
       }
 
-      // 2. Trocar id_token por JWT nosso via backend.
       await applyGoogleAuth(idToken);
     } catch (err) {
+      if (isErrorWithCode(err)) {
+        switch (err.code) {
+          case statusCodes.SIGN_IN_CANCELLED:
+            // Usuário cancelou. Sem alert.
+            return;
+          case statusCodes.IN_PROGRESS:
+            // Já tem outro signIn em curso. Só ignora.
+            return;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            Alert.alert(
+              'Google Play Services indisponível',
+              'Atualize ou ative o Google Play Services pra continuar.',
+            );
+            return;
+        }
+      }
       Alert.alert('Não foi possível entrar', extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [applyGoogleAuth, notConfigured, promptAsync]);
+  }, [applyGoogleAuth, notConfigured]);
 
   return { signInWithGoogle, loading, notConfigured };
 };
