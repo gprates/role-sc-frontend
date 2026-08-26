@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { CategoriaBadge } from './CategoriaBadge';
-import { EventoCoverPlaceholder } from './EventoCoverPlaceholder';
+import { EventoCover } from './EventoCover';
 import { colors, radius, spacing, typography } from '@/theme';
 import { Evento } from '@/types';
 import { formatCardDate } from '@/utils/format';
@@ -29,7 +29,11 @@ export const EventoCard: React.FC<EventoCardProps> = ({
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.cover}>
-        <EventoCoverPlaceholder categoria={evento.categoria} height={160} />
+        <EventoCover
+          imageUrl={evento.imageUrl}
+          categoria={evento.categoria}
+          height={160}
+        />
         {evento.categoria ? (
           <View style={styles.badgeWrapper}>
             <CategoriaBadge categoria={evento.categoria} />

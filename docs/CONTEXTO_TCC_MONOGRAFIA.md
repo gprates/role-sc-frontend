@@ -405,7 +405,7 @@ sequenceDiagram
 ### 8.1 Coleções (descrição)
 
 #### `raw_crawls`
-Bruto extraído pelo crawler. Não tem schema rígido — campos típicos: `_id`, `url`, `site`, `municipio`, `htmlOuTexto`, `crawledAt`, `processedAt`.
+Bruto extraído pelo crawler. Não tem schema rígido — campos típicos: `_id`, `url`, `site`, `municipality`, `title`, `rawText`, `publishedAt`, `imageUrl`, `crawledAt`, `processed`.
 
 #### `eventos` (consumida pela API, alimentada pelo NLP)
 ```typescript
@@ -418,6 +418,7 @@ Bruto extraído pelo crawler. Não tem schema rígido — campos típicos: `_id`
   horario: string | null,
   local: string | null,
   categoria: 'Cultura'|'Esporte'|'Gastronomia'|'Educação'|'Saúde'|'Meio Ambiente'|'Turismo'|'Religião'|'Outro' | null,
+  imageUrl?: string | null,    // capa extraída pelo crawler (raw_crawls.imageUrl); opcional
   isEvent: boolean,            // false = a IA classificou como "não-evento" (notícia comum)
   municipio: string,
   site: string,
@@ -694,6 +695,7 @@ erDiagram
 | RN23 | **Antienumeration**: `resend-verification` sempre retorna 200 com mensagem genérica, mesmo se o email não existir. **Exceção consciente**: `forgot-password` retorna 404 explícito (decisão pragmática: "app de eventos locais não é banco"). |
 | RN24 | Toda request ao backend exige o header `x-api-key` (verificado pelo API Gateway antes da Lambda). Rotas protegidas exigem adicionalmente `Authorization: Bearer <jwt>`. |
 | RN25 | A categorização (campo `categoria` do evento) é definida pela IA no momento do processamento; o usuário não pode editar. Caso ela falhe, fica `null` e o app exibe gradiente "Outro". |
+| RN26 | A capa do evento (listagem e detalhe) usa a imagem de destaque extraída pelo crawler (`imageUrl`). Quando o evento não tem imagem, ou quando a URL falha ao carregar, o app exibe o placeholder de gradiente + ícone da categoria. A imagem é sempre servida pela URL original do site da prefeitura — não há cópia para o S3. |
 
 ---
 

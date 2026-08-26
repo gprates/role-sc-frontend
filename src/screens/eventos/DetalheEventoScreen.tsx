@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CategoriaBadge } from '@/components/CategoriaBadge';
-import { EventoCoverPlaceholder } from '@/components/EventoCoverPlaceholder';
+import { EventoCover } from '@/components/EventoCover';
 import { useFavoritos } from '@/hooks/useFavoritos';
 import { eventoService } from '@/services/evento.service';
 import { extractErrorMessage } from '@/services/api';
@@ -113,7 +113,11 @@ export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroWrapper}>
-          <EventoCoverPlaceholder categoria={evento.categoria} height={260} />
+          <EventoCover
+            imageUrl={evento.imageUrl}
+            categoria={evento.categoria}
+            height={260}
+          />
           <SafeAreaView style={styles.heroOverlay} edges={['top']}>
             <Pressable
               onPress={() => navigation.goBack()}

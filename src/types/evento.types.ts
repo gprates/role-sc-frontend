@@ -11,6 +11,7 @@ export interface Evento {
   horario: string | null;
   local: string | null;
   categoria: string | null;
+  imageUrl?: string | null;
   municipio: string;
   site: string;
   url: string;

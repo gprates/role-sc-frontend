@@ -14,7 +14,7 @@ interface EventoCoverPlaceholderProps {
 }
 
 /**
- * Capa do evento quando não há imagem (o backend atual não expõe URL de imagem).
+ * Fallback da capa quando o evento não tem imagem própria.
  * Usa gradiente da cor da categoria + ícone representativo.
  */
 export const EventoCoverPlaceholder: React.FC<EventoCoverPlaceholderProps> = ({
