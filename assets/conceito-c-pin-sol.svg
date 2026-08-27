@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- CONCEITO C — Pin com sol e mar.
+       Junta os dois anteriores: a silhueta do pin dá o "onde", e dentro dele o
+       sol sobre a água dá o "litoral". Mais rico que A e B, e por isso o que
+       mais perde detalhe em 48px — vale conferir na régua de tamanhos. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A65C1"/>
+      <stop offset="1" stop-color="#5EB3F2"/>
+    </linearGradient>
+    <!-- Recorta o conteúdo interno no disco do pin. -->
+    <clipPath id="disco">
+      <circle cx="512" cy="424" r="140"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#g)"/>
+
+  <path d="M512,832 C512,832 292,572 292,430 A220,220 0 1 1 732,430 C732,572 512,832 512,832 Z"
+        fill="#FFFFFF"/>
+
+  <g clip-path="url(#disco)">
+    <circle cx="512" cy="424" r="140" fill="url(#g)"/>
+    <!-- Sol meio submerso no horizonte. -->
+    <circle cx="512" cy="408" r="66" fill="#FFFFFF"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round">
+      <path d="M372,470 q35,-28 70,0 t70,0 t70,0 t70,0"/>
+      <path d="M372,536 q35,-28 70,0 t70,0 t70,0 t70,0"/>
+    </g>
+  </g>
+</svg>

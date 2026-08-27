@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
+  Alert,  Pressable,  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -147,101 +143,97 @@ export const ConfirmarCodigoScreen: React.FC<Props> = ({ route, navigation }) =>
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={styles.backRow}
         >
-          <Pressable
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-            style={styles.backRow}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
-            <Text style={styles.backText}>Voltar</Text>
-          </Pressable>
+          <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
+          <Text style={styles.backText}>Voltar</Text>
+        </Pressable>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Confirme o código</Text>
-            <Text style={styles.subtitle}>
-              Enviamos um código de 6 dígitos para{' '}
-              <Text style={styles.emailStrong}>{email}</Text>. Digite-o abaixo
-              para continuar.
+        <View style={styles.header}>
+          <Text style={styles.title}>Confirme o código</Text>
+          <Text style={styles.subtitle}>
+            Enviamos um código de 6 dígitos para{' '}
+            <Text style={styles.emailStrong}>{email}</Text>. Digite-o abaixo
+            para continuar.
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={() => inputRef.current?.focus()}
+          style={styles.cellsRow}
+        >
+          {cells}
+        </Pressable>
+
+        {/* Input "real" escondido — captura toda a entrada do teclado */}
+        <TextInput
+          ref={inputRef}
+          value={code}
+          onChangeText={handleChangeCode}
+          keyboardType="number-pad"
+          inputMode="numeric"
+          maxLength={CODE_LENGTH}
+          autoFocus
+          caretHidden
+          style={styles.hiddenInput}
+          textContentType="oneTimeCode"
+          autoComplete="one-time-code"
+        />
+
+        <View style={styles.actions}>
+          <Button
+            label="Confirmar"
+            onPress={handleSubmit}
+            loading={submitting}
+            disabled={code.length !== CODE_LENGTH}
+          />
+          <Pressable
+            onPress={handleResend}
+            disabled={resendDisabled}
+            hitSlop={8}
+            style={styles.resendBtn}
+          >
+            <Text
+              style={[
+                styles.resendText,
+                resendDisabled && styles.resendTextDisabled,
+              ]}
+            >
+              {resendLabel}
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.tipsCard}>
+          <View style={styles.tipRow}>
+            <Ionicons
+              name="time-outline"
+              size={18}
+              color={colors.primary}
+            />
+            <Text style={styles.tipText}>O código expira em 15 minutos.</Text>
+          </View>
+          <View style={styles.tipDivider} />
+          <View style={styles.tipRow}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={18}
+              color={colors.primary}
+            />
+            <Text style={styles.tipText}>
+              Não esqueça de olhar a pasta de spam.
             </Text>
           </View>
-
-          <Pressable
-            onPress={() => inputRef.current?.focus()}
-            style={styles.cellsRow}
-          >
-            {cells}
-          </Pressable>
-
-          {/* Input "real" escondido — captura toda a entrada do teclado */}
-          <TextInput
-            ref={inputRef}
-            value={code}
-            onChangeText={handleChangeCode}
-            keyboardType="number-pad"
-            inputMode="numeric"
-            maxLength={CODE_LENGTH}
-            autoFocus
-            caretHidden
-            style={styles.hiddenInput}
-            textContentType="oneTimeCode"
-            autoComplete="one-time-code"
-          />
-
-          <View style={styles.actions}>
-            <Button
-              label="Confirmar"
-              onPress={handleSubmit}
-              loading={submitting}
-              disabled={code.length !== CODE_LENGTH}
-            />
-            <Pressable
-              onPress={handleResend}
-              disabled={resendDisabled}
-              hitSlop={8}
-              style={styles.resendBtn}
-            >
-              <Text
-                style={[
-                  styles.resendText,
-                  resendDisabled && styles.resendTextDisabled,
-                ]}
-              >
-                {resendLabel}
-              </Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.tipsCard}>
-            <View style={styles.tipRow}>
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={colors.primary}
-              />
-              <Text style={styles.tipText}>O código expira em 15 minutos.</Text>
-            </View>
-            <View style={styles.tipDivider} />
-            <View style={styles.tipRow}>
-              <Ionicons
-                name="alert-circle-outline"
-                size={18}
-                color={colors.primary}
-              />
-              <Text style={styles.tipText}>
-                Não esqueça de olhar a pasta de spam.
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

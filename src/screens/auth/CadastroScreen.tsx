@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -67,99 +65,95 @@ export const CadastroScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={styles.backRow}
         >
-          <Pressable
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-            style={styles.backRow}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
-            <Text style={styles.backText}>Voltar</Text>
-          </Pressable>
+          <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
+          <Text style={styles.backText}>Voltar</Text>
+        </Pressable>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Criar conta</Text>
-            <Text style={styles.subtitle}>
-              Junte-se ao Rolê SC e descubra tudo o que rola por perto.
-            </Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Criar conta</Text>
+          <Text style={styles.subtitle}>
+            Junte-se ao Rolê SC e descubra tudo o que rola por perto.
+          </Text>
+        </View>
+
+        <View style={styles.form}>
+          {!googleNotConfigured ? (
+            <>
+              <GoogleSignInButton
+                onPress={() => void signInWithGoogle()}
+                loading={googleLoading}
+                disabled={submitting}
+              />
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OU</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            </>
+          ) : null}
+
+          <Input
+            icon="person-outline"
+            placeholder="Nome completo"
+            autoCapitalize="words"
+            value={nome}
+            onChangeText={setNome}
+          />
+          <Input
+            icon="mail-outline"
+            placeholder="seu@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Input
+            icon="lock-closed-outline"
+            placeholder="Senha"
+            value={senha}
+            onChangeText={setSenha}
+            isPassword
+          />
+          <PasswordStrengthMeter password={senha} />
+          <Input
+            icon="lock-closed-outline"
+            placeholder="Confirmar senha"
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
+            isPassword
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+
+          <Button
+            label="Criar conta"
+            onPress={handleSubmit}
+            loading={submitting}
+            style={{ marginTop: spacing.sm }}
+          />
+
+          <View style={styles.bottomRow}>
+            <Text style={styles.bottomText}>Já tem conta? </Text>
+            <Pressable
+              onPress={() => navigation.navigate('Login')}
+              hitSlop={8}
+            >
+              <Text style={styles.linkStrong}>Entrar</Text>
+            </Pressable>
           </View>
-
-          <View style={styles.form}>
-            {!googleNotConfigured ? (
-              <>
-                <GoogleSignInButton
-                  onPress={() => void signInWithGoogle()}
-                  loading={googleLoading}
-                  disabled={submitting}
-                />
-                <View style={styles.divider}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>OU</Text>
-                  <View style={styles.dividerLine} />
-                </View>
-              </>
-            ) : null}
-
-            <Input
-              icon="person-outline"
-              placeholder="Nome completo"
-              autoCapitalize="words"
-              value={nome}
-              onChangeText={setNome}
-            />
-            <Input
-              icon="mail-outline"
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={setEmail}
-            />
-            <Input
-              icon="lock-closed-outline"
-              placeholder="Senha"
-              value={senha}
-              onChangeText={setSenha}
-              isPassword
-            />
-            <PasswordStrengthMeter password={senha} />
-            <Input
-              icon="lock-closed-outline"
-              placeholder="Confirmar senha"
-              value={confirmarSenha}
-              onChangeText={setConfirmarSenha}
-              isPassword
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
-
-            <Button
-              label="Criar conta"
-              onPress={handleSubmit}
-              loading={submitting}
-              style={{ marginTop: spacing.sm }}
-            />
-
-            <View style={styles.bottomRow}>
-              <Text style={styles.bottomText}>Já tem conta? </Text>
-              <Pressable
-                onPress={() => navigation.navigate('Login')}
-                hitSlop={8}
-              >
-                <Text style={styles.linkStrong}>Entrar</Text>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

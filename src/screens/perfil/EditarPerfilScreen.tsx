@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
+  Alert,  Pressable,  StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -73,80 +69,76 @@ export const EditarPerfilScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={styles.backRow}
         >
-          <Pressable
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-            style={styles.backRow}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
-            <Text style={styles.backText}>Voltar</Text>
-          </Pressable>
+          <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
+          <Text style={styles.backText}>Voltar</Text>
+        </Pressable>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Editar perfil</Text>
-            <Text style={styles.subtitle}>
-              Atualize seu nome de exibição. Para alterar a foto, volte ao
-              perfil e toque no avatar.
+        <View style={styles.header}>
+          <Text style={styles.title}>Editar perfil</Text>
+          <Text style={styles.subtitle}>
+            Atualize seu nome de exibição. Para alterar a foto, volte ao
+            perfil e toque no avatar.
+          </Text>
+        </View>
+
+        <View style={styles.form}>
+          <View>
+            <Text style={styles.fieldLabel}>NOME</Text>
+            <Input
+              icon="person-outline"
+              placeholder="Nome completo"
+              autoCapitalize="words"
+              value={nome}
+              onChangeText={setNome}
+              maxLength={NOME_MAX_LENGTH}
+              returnKeyType="done"
+              onSubmitEditing={handleSave}
+              autoFocus
+            />
+          </View>
+
+          <View>
+            <Text style={styles.fieldLabel}>EMAIL</Text>
+            <View style={styles.readOnlyField}>
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={colors.textMuted}
+                style={styles.readOnlyIcon}
+              />
+              <Text style={styles.readOnlyText} numberOfLines={1}>
+                {user?.email ?? '—'}
+              </Text>
+              <Ionicons
+                name="lock-closed"
+                size={14}
+                color={colors.textMuted}
+              />
+            </View>
+            <Text style={styles.fieldHelp}>
+              O email não pode ser alterado.
             </Text>
           </View>
 
-          <View style={styles.form}>
-            <View>
-              <Text style={styles.fieldLabel}>NOME</Text>
-              <Input
-                icon="person-outline"
-                placeholder="Nome completo"
-                autoCapitalize="words"
-                value={nome}
-                onChangeText={setNome}
-                maxLength={NOME_MAX_LENGTH}
-                returnKeyType="done"
-                onSubmitEditing={handleSave}
-                autoFocus
-              />
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>EMAIL</Text>
-              <View style={styles.readOnlyField}>
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={colors.textMuted}
-                  style={styles.readOnlyIcon}
-                />
-                <Text style={styles.readOnlyText} numberOfLines={1}>
-                  {user?.email ?? '—'}
-                </Text>
-                <Ionicons
-                  name="lock-closed"
-                  size={14}
-                  color={colors.textMuted}
-                />
-              </View>
-              <Text style={styles.fieldHelp}>
-                O email não pode ser alterado.
-              </Text>
-            </View>
-
-            <Button
-              label={houveAlteracao ? 'Salvar alterações' : 'Voltar'}
-              onPress={handleSave}
-              loading={submitting}
-              disabled={!nomeValido}
-              style={{ marginTop: spacing.sm }}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <Button
+            label={houveAlteracao ? 'Salvar alterações' : 'Voltar'}
+            onPress={handleSave}
+            loading={submitting}
+            disabled={!nomeValido}
+            style={{ marginTop: spacing.sm }}
+          />
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

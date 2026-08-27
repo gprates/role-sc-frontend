@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -70,50 +68,46 @@ export const RecuperarSenhaScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={styles.backRow}
         >
-          <Pressable
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-            style={styles.backRow}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
-            <Text style={styles.backText}>Voltar ao login</Text>
-          </Pressable>
+          <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
+          <Text style={styles.backText}>Voltar ao login</Text>
+        </Pressable>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Recuperar senha</Text>
-            <Text style={styles.subtitle}>
-              Vamos enviar um código de 6 dígitos para o seu email.
-            </Text>
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>Recuperar senha</Text>
+          <Text style={styles.subtitle}>
+            Vamos enviar um código de 6 dígitos para o seu email.
+          </Text>
+        </View>
 
-          <View style={styles.form}>
-            <Input
-              icon="mail-outline"
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={setEmail}
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
-            <Button
-              label="Enviar código"
-              onPress={handleSubmit}
-              loading={submitting}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <View style={styles.form}>
+          <Input
+            icon="mail-outline"
+            placeholder="seu@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={email}
+            onChangeText={setEmail}
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+          <Button
+            label="Enviar código"
+            onPress={handleSubmit}
+            loading={submitting}
+          />
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

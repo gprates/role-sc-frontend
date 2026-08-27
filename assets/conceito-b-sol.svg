@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- CONCEITO B — Sol sobre ondas.
+       O mais legível dos três em tamanho pequeno: duas formas grandes, nenhum
+       detalhe fino. Comunica "litoral / verão / programa ao ar livre".
+       Risco: sem o pin, pode ser lido como app de praia ou clima. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A65C1"/>
+      <stop offset="1" stop-color="#5EB3F2"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#g)"/>
+
+  <!-- Sol. Fica acima da linha d'água, sem tocar as ondas. -->
+  <circle cx="512" cy="396" r="158" fill="#FFFFFF"/>
+
+  <!-- Três ondas. O gradiente aparece nos vãos e dá profundidade. -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="46" stroke-linecap="round">
+    <path d="M236,644 q69,-56 138,0 t138,0 t138,0 t138,0"/>
+    <path d="M236,760 q69,-56 138,0 t138,0 t138,0 t138,0"/>
+    <path d="M236,876 q69,-56 138,0 t138,0 t138,0 t138,0"/>
+  </g>
+</svg>

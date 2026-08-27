@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Foreground do adaptive icon do Android (android.adaptiveIcon.foregroundImage).
+       Fundo TRANSPARENTE de propósito: a cor vem de adaptiveIcon.backgroundColor
+       (#1E88E5) no app.json.
+
+       O Android recorta esse foreground em círculo, squircle ou outras formas
+       conforme o launcher, e ainda aplica zoom. Só os ~66% centrais são zona
+       segura — por isso o "R" aqui é bem menor que no icon.png full-bleed.
+       Qualquer coisa fora desse miolo pode ser cortada. -->
+  <text x="512" y="512"
+        font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+        font-size="420" font-weight="900" font-style="italic"
+        fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">R</text>
+</svg>

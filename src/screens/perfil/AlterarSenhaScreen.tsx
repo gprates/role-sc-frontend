@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
+  Alert,  Pressable,  StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -101,102 +97,98 @@ export const AlterarSenhaScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={12}
+          style={styles.backRow}
         >
-          <Pressable
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-            style={styles.backRow}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
-            <Text style={styles.backText}>Voltar</Text>
-          </Pressable>
+          <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
+          <Text style={styles.backText}>Voltar</Text>
+        </Pressable>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Alterar senha</Text>
-            <Text style={styles.subtitle}>
-              Para sua segurança, confirme sua senha atual antes de definir uma
-              nova.
-            </Text>
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>Alterar senha</Text>
+          <Text style={styles.subtitle}>
+            Para sua segurança, confirme sua senha atual antes de definir uma
+            nova.
+          </Text>
+        </View>
 
-          <View style={styles.form}>
-            <Input
-              icon="lock-closed-outline"
-              placeholder="Senha atual"
-              value={senhaAtual}
-              onChangeText={setSenhaAtual}
-              isPassword
-              autoFocus
-            />
+        <View style={styles.form}>
+          <Input
+            icon="lock-closed-outline"
+            placeholder="Senha atual"
+            value={senhaAtual}
+            onChangeText={setSenhaAtual}
+            isPassword
+            autoFocus
+          />
 
-            <Input
-              icon="lock-closed-outline"
-              placeholder="Nova senha"
-              value={novaSenha}
-              onChangeText={setNovaSenha}
-              isPassword
-            />
+          <Input
+            icon="lock-closed-outline"
+            placeholder="Nova senha"
+            value={novaSenha}
+            onChangeText={setNovaSenha}
+            isPassword
+          />
 
-            <PasswordStrengthMeter password={novaSenha} />
+          <PasswordStrengthMeter password={novaSenha} />
 
-            {senhaIgualAtual ? (
-              <View style={styles.matchRow}>
-                <Ionicons name="alert-circle" size={16} color={colors.danger} />
-                <Text style={[styles.matchText, { color: colors.danger }]}>
-                  A nova senha precisa ser diferente da atual.
-                </Text>
-              </View>
-            ) : null}
+          {senhaIgualAtual ? (
+            <View style={styles.matchRow}>
+              <Ionicons name="alert-circle" size={16} color={colors.danger} />
+              <Text style={[styles.matchText, { color: colors.danger }]}>
+                A nova senha precisa ser diferente da atual.
+              </Text>
+            </View>
+          ) : null}
 
-            <Input
-              icon="lock-closed-outline"
-              placeholder="Confirmar nova senha"
-              value={confirmarSenha}
-              onChangeText={setConfirmarSenha}
-              isPassword
-              returnKeyType="done"
-              onSubmitEditing={handleSave}
-            />
+          <Input
+            icon="lock-closed-outline"
+            placeholder="Confirmar nova senha"
+            value={confirmarSenha}
+            onChangeText={setConfirmarSenha}
+            isPassword
+            returnKeyType="done"
+            onSubmitEditing={handleSave}
+          />
 
-            {senhasIguais && !senhaIgualAtual ? (
-              <View style={styles.matchRow}>
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color={colors.success}
-                />
-                <Text style={[styles.matchText, { color: colors.success }]}>
-                  As senhas conferem.
-                </Text>
-              </View>
-            ) : null}
+          {senhasIguais && !senhaIgualAtual ? (
+            <View style={styles.matchRow}>
+              <Ionicons
+                name="checkmark-circle"
+                size={16}
+                color={colors.success}
+              />
+              <Text style={[styles.matchText, { color: colors.success }]}>
+                As senhas conferem.
+              </Text>
+            </View>
+          ) : null}
 
-            {senhasDiferentes ? (
-              <View style={styles.matchRow}>
-                <Ionicons name="alert-circle" size={16} color={colors.danger} />
-                <Text style={[styles.matchText, { color: colors.danger }]}>
-                  As senhas não coincidem.
-                </Text>
-              </View>
-            ) : null}
+          {senhasDiferentes ? (
+            <View style={styles.matchRow}>
+              <Ionicons name="alert-circle" size={16} color={colors.danger} />
+              <Text style={[styles.matchText, { color: colors.danger }]}>
+                As senhas não coincidem.
+              </Text>
+            </View>
+          ) : null}
 
-            <Button
-              label="Salvar nova senha"
-              onPress={handleSave}
-              loading={submitting}
-              disabled={submitDisabled}
-              style={{ marginTop: spacing.sm }}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <Button
+            label="Salvar nova senha"
+            onPress={handleSave}
+            loading={submitting}
+            disabled={submitDisabled}
+            style={{ marginTop: spacing.sm }}
+          />
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

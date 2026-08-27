@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
@@ -59,77 +57,73 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.header}>
-            <Logo size={88} />
-            <Text style={styles.title}>Rolê SC</Text>
-            <Text style={styles.subtitle}>Eventos do litoral catarinense</Text>
+        <View style={styles.header}>
+          <Logo size={88} />
+          <Text style={styles.title}>Rolê SC</Text>
+          <Text style={styles.subtitle}>Eventos do litoral catarinense</Text>
+        </View>
+
+        <View style={styles.form}>
+          <Input
+            icon="mail-outline"
+            placeholder="seu@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={email}
+            onChangeText={setEmail}
+            returnKeyType="next"
+          />
+          <Input
+            icon="lock-closed-outline"
+            placeholder="Senha"
+            value={senha}
+            onChangeText={setSenha}
+            isPassword
+            returnKeyType="done"
+            onSubmitEditing={handleSubmit}
+          />
+
+          <Pressable
+            onPress={() => navigation.navigate('RecuperarSenha')}
+            hitSlop={8}
+            style={styles.forgotWrapper}
+          >
+            <Text style={styles.link}>Esqueci minha senha</Text>
+          </Pressable>
+
+          <Button label="Entrar" onPress={handleSubmit} loading={submitting} />
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OU</Text>
+            <View style={styles.dividerLine} />
           </View>
 
-          <View style={styles.form}>
-            <Input
-              icon="mail-outline"
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={email}
-              onChangeText={setEmail}
-              returnKeyType="next"
+          {!googleNotConfigured ? (
+            <GoogleSignInButton
+              onPress={() => void signInWithGoogle()}
+              loading={googleLoading}
+              disabled={submitting}
             />
-            <Input
-              icon="lock-closed-outline"
-              placeholder="Senha"
-              value={senha}
-              onChangeText={setSenha}
-              isPassword
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
+          ) : null}
 
+          <View style={styles.bottomRow}>
+            <Text style={styles.bottomText}>Novo por aqui? </Text>
             <Pressable
-              onPress={() => navigation.navigate('RecuperarSenha')}
+              onPress={() => navigation.navigate('Cadastro')}
               hitSlop={8}
-              style={styles.forgotWrapper}
             >
-              <Text style={styles.link}>Esqueci minha senha</Text>
+              <Text style={styles.linkStrong}>Criar conta</Text>
             </Pressable>
-
-            <Button label="Entrar" onPress={handleSubmit} loading={submitting} />
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OU</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {!googleNotConfigured ? (
-              <GoogleSignInButton
-                onPress={() => void signInWithGoogle()}
-                loading={googleLoading}
-                disabled={submitting}
-              />
-            ) : null}
-
-            <View style={styles.bottomRow}>
-              <Text style={styles.bottomText}>Novo por aqui? </Text>
-              <Pressable
-                onPress={() => navigation.navigate('Cadastro')}
-                hitSlop={8}
-              >
-                <Text style={styles.linkStrong}>Criar conta</Text>
-              </Pressable>
-            </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

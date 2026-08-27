@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Ícone principal do app (expo.icon). Full-bleed, sem transparência.
+       Mesma identidade do componente Logo.tsx: gradiente colors.gradientPrimary
+       (#0A65C1 → #5EB3F2) com o "R" em colors.textPrimary escuro (#0A1E3C). -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A65C1"/>
+      <stop offset="1" stop-color="#5EB3F2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#g)"/>
+  <text x="512" y="512"
+        font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+        font-size="620" font-weight="900" font-style="italic"
+        fill="#0A1E3C" text-anchor="middle" dominant-baseline="central">R</text>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- CONCEITO A — Pin + onda.
+       "Onde tem rolê perto de mim, no litoral." O pin é o signo mais direto de
+       app geolocalizado; a onda dentro dele amarra ao litoral norte de SC.
+       Paleta: colors.gradientPrimary (#0A65C1 → #5EB3F2). -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A65C1"/>
+      <stop offset="1" stop-color="#5EB3F2"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#g)"/>
+
+  <!-- Pin sólido branco, com bastante massa pra aguentar 48px no launcher. -->
+  <path d="M512,832 C512,832 292,572 292,430 A220,220 0 1 1 732,430 C732,572 512,832 512,832 Z"
+        fill="#FFFFFF"/>
+
+  <!-- Vazado do pin, na cor do fundo. -->
+  <circle cx="512" cy="424" r="134" fill="url(#g)"/>
+
+  <!-- Onda dentro do vazado. Traço grosso e arredondado pra não sumir. -->
+  <path d="M418,424 q23.5,-30 47,0 t47,0 t47,0 t47,0"
+        fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round"/>
+</svg>
