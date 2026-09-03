@@ -20,7 +20,7 @@ import { FilterSelectModal } from '@/components/FilterSelectModal';
 import { PeriodoFilterModal } from '@/components/PeriodoFilterModal';
 import { StatusFilterModal } from '@/components/StatusFilterModal';
 import { useEventos } from '@/hooks/useEventos';
-import { useFavoritos } from '@/hooks/useFavoritos';
+import { useFavoritos } from '@/contexts/FavoritosContext';
 import { colors, radius, spacing, typography } from '@/theme';
 import { EventosFilter, EventoStatus } from '@/types';
 import { CATEGORIAS, MUNICIPIOS_FIXOS } from '@/utils/constants';

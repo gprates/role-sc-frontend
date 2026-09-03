@@ -1,46 +1,45 @@
-import { Evento } from '@/types';
-import { STORAGE_KEYS } from '@/utils/constants';
-import { storage } from '@/utils/storage';
+import api from './api';
+import {
+  EventosResponse,
+  FavoritoIdsResponse,
+  FavoritoToggleResponse,
+} from '@/types';
+
+interface ListFavoritosParams {
+  page?: number;
+  limit?: number;
+}
 
 /**
- * Serviço de favoritos 100% local, via AsyncStorage.
- * Mantém o mesmo shape (lista de Evento) que um endpoint server-side retornaria,
- * para que futuramente seja trivial trocar a implementação por chamadas à API.
+ * Favoritos são server-side: ficam na coleção `favoritos` do backend, atrelados
+ * ao usuário do token. Antes isso vivia no AsyncStorage do aparelho, o que fazia
+ * a lista ser do DISPOSITIVO e não da PESSOA — trocar de celular ou de conta
+ * mostrava os favoritos errados.
  */
 export const favoritosService = {
-  async list(): Promise<Evento[]> {
-    const list = await storage.get<Evento[]>(STORAGE_KEYS.favoritos);
-    return list ?? [];
+  /** Eventos favoritados, mais recém-favoritados primeiro (paginado). */
+  async list(params: ListFavoritosParams = {}): Promise<EventosResponse> {
+    const { data } = await api.get<EventosResponse>('/favoritos', { params });
+    return data;
   },
 
-  async isFavorito(id: string): Promise<boolean> {
-    const list = await favoritosService.list();
-    return list.some((e) => e._id === id);
+  /** Ids de todos os favoritos, sem paginação — usado para o estado do coração. */
+  async listIds(): Promise<string[]> {
+    const { data } = await api.get<FavoritoIdsResponse>('/favoritos/ids');
+    return data.data;
   },
 
-  async add(evento: Evento): Promise<Evento[]> {
-    const list = await favoritosService.list();
-    if (list.some((e) => e._id === evento._id)) return list;
-    const updated = [evento, ...list];
-    await storage.set(STORAGE_KEYS.favoritos, updated);
-    return updated;
+  async add(eventoId: string): Promise<FavoritoToggleResponse> {
+    const { data } = await api.post<FavoritoToggleResponse>(
+      `/favoritos/${eventoId}`,
+    );
+    return data;
   },
 
-  async remove(id: string): Promise<Evento[]> {
-    const list = await favoritosService.list();
-    const updated = list.filter((e) => e._id !== id);
-    await storage.set(STORAGE_KEYS.favoritos, updated);
-    return updated;
-  },
-
-  async toggle(evento: Evento): Promise<{ favorito: boolean; lista: Evento[] }> {
-    const list = await favoritosService.list();
-    const exists = list.some((e) => e._id === evento._id);
-    if (exists) {
-      const lista = await favoritosService.remove(evento._id);
-      return { favorito: false, lista };
-    }
-    const lista = await favoritosService.add(evento);
-    return { favorito: true, lista };
+  async remove(eventoId: string): Promise<FavoritoToggleResponse> {
+    const { data } = await api.delete<FavoritoToggleResponse>(
+      `/favoritos/${eventoId}`,
+    );
+    return data;
   },
 };

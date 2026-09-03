@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ScreenBackground } from '@/components/ScreenBackground';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { FavoritosProvider } from '@/contexts/FavoritosContext';
 import { RootNavigator } from '@/navigation/RootNavigator';
 
 export default function App() {
@@ -16,7 +17,9 @@ export default function App() {
           <ScreenBackground>
             <StatusBar style="dark" />
             <AuthProvider>
-              <RootNavigator />
+              <FavoritosProvider>
+                <RootNavigator />
+              </FavoritosProvider>
             </AuthProvider>
           </ScreenBackground>
         </KeyboardProvider>

@@ -10,7 +10,7 @@
 
 ## 1. Resumo executivo (parágrafo único para abstract/introdução)
 
-O **Rolê SC** é um aplicativo mobile que centraliza eventos culturais, esportivos, gastronômicos, religiosos e comunitários dos municípios do litoral norte de Santa Catarina (Itajaí, Camboriú, Balneário Camboriú, Porto Belo, Itapema, Bombinhas). A informação hoje está pulverizada em **sites de prefeituras, fundações culturais e perfis de redes sociais**, em formatos não estruturados (notícias em HTML, posts em Instagram, PDFs). O sistema usa um pipeline de coleta automática (web crawler com Playwright em AWS Lambda) que extrai HTML bruto dos sites oficiais; em seguida, um processador NLP (Llama 3.1 8B via Groq, também em Lambda) converte cada página em uma estrutura `Evento` (título, data, local, categoria, descrição) ou descarta como "não-evento". Esses eventos ficam disponíveis no MongoDB Atlas e são consumidos por uma API REST (Fastify + JWT) que alimenta um app React Native (Expo, Android). O usuário acessa os eventos filtrando por município, categoria, data e busca textual; pode favoritar localmente, abrir a publicação original em navegador e compartilhar; e tem fluxos completos de cadastro, verificação de email, login (email/senha ou Google), recuperação e alteração de senha, edição de perfil e upload de avatar. O modelo de negócio inicial é **acadêmico/sem fins lucrativos**, com roadmap para sustentabilidade via patrocínio municipal e parcerias com produtores culturais.
+O **Rolê SC** é um aplicativo mobile que centraliza eventos culturais, esportivos, gastronômicos, religiosos e comunitários dos municípios do litoral norte de Santa Catarina (Itajaí, Camboriú, Balneário Camboriú, Porto Belo, Itapema, Bombinhas). A informação hoje está pulverizada em **sites de prefeituras, fundações culturais e perfis de redes sociais**, em formatos não estruturados (notícias em HTML, posts em Instagram, PDFs). O sistema usa um pipeline de coleta automática (web crawler com Playwright em AWS Lambda) que extrai HTML bruto dos sites oficiais; em seguida, um processador NLP (Llama 3.1 8B via Groq, também em Lambda) converte cada página em uma estrutura `Evento` (título, data, local, categoria, descrição) ou descarta como "não-evento". Esses eventos ficam disponíveis no MongoDB Atlas e são consumidos por uma API REST (Fastify + JWT) que alimenta um app React Native (Expo, Android). O usuário acessa os eventos filtrando por município, categoria, data e busca textual; pode favoritar eventos (persistidos por usuário no MongoDB, via API), abrir a publicação original em navegador e compartilhar; e tem fluxos completos de cadastro, verificação de email, login (email/senha ou Google), recuperação e alteração de senha, edição de perfil e upload de avatar. O modelo de negócio inicial é **acadêmico/sem fins lucrativos**, com roadmap para sustentabilidade via patrocínio municipal e parcerias com produtores culturais.
 
 ---
 
@@ -146,8 +146,8 @@ Centralização e estruturação automatizada de eventos públicos do litoral no
 | **TypeScript** | 5.9 | Linguagem | Consistência com o backend; pega bugs cedo, especialmente em respostas de API. |
 | **React Navigation** | 7 | Navegação | Padrão de fato em RN; suporta stack nativo (`native-stack`) com transições fluidas + bottom tabs. |
 | **Axios** | 1.7 | HTTP client | API ergonômica, interceptors para `x-api-key` (API Gateway) e `Authorization: Bearer` (JWT); centraliza tratamento de 401 → logout. |
-| **AsyncStorage** | 2.2 | Persistência local | Padrão RN para key-value; armazena JWT, user, favoritos. |
-| **Context API** | nativo | Estado global | Suficiente para auth global (single source of truth); evita overkill de Redux/Zustand para o escopo. |
+| **AsyncStorage** | 2.2 | Persistência local | Padrão RN para key-value; armazena JWT e user (sessão). Favoritos NÃO ficam aqui — são por usuário, no servidor. |
+| **Context API** | nativo | Estado global | Suficiente para auth e favoritos globais (single source of truth); evita overkill de Redux/Zustand para o escopo. |
 | **expo-auth-session** + **expo-crypto** | 7.0 / 15.0 | OAuth Google | Implementa o fluxo OpenID Connect (`id_token`) sem precisar de SDK proprietário do Google. |
 | **expo-image-picker** | 17.0 | Captura/seleção de foto | Avatar do usuário (câmera ou galeria) com permissões nativas. |
 | **expo-file-system** | 19.0 | Upload | Necessário para o PUT no S3 (presigned URL). |
@@ -203,8 +203,8 @@ Centralização e estruturação automatizada de eventos públicos do litoral no
 | **Singleton (lazy)** | Conexão MongoDB no backend é reaproveitada entre invocações Lambda (warm starts). |
 | **JSON Schema Validation** | Validação de request body/query no Fastify, sem libs extras. |
 | **Interceptors** | Frontend (`src/services/api.ts`) — injeta headers e trata 401 globalmente. |
-| **Context Provider** | Frontend (`AuthContext`) — estado global de autenticação. |
-| **Custom Hooks** | Frontend (`useEventos`, `useFavoritos`, `useGoogleSignIn`, `useAvatarUpload`) — encapsula efeitos e estado local. |
+| **Context Provider** | Frontend (`AuthContext`, `FavoritosContext`) — estado global de autenticação e de favoritos. |
+| **Custom Hooks** | Frontend (`useEventos`, `useGoogleSignIn`, `useAvatarUpload`) — encapsula efeitos e estado local. |
 | **Fastify Hooks (preHandler)** | Backend (`auth.hook.ts`) — autenticação JWT em rotas protegidas (não middleware Express-style). |
 | **Antienumeration** | Endpoints de auth retornam mensagens genéricas em alguns casos (resend-verification, login com senha incorreta) para não vazar se um email existe. |
 | **TTL Indexes** | Tokens efêmeros (verificação de email, códigos/tokens de reset de senha) auto-deletados pelo Mongo. |
@@ -501,6 +501,8 @@ erDiagram
     USERS ||--o{ EMAIL_VERIFICATION_TOKENS : "tem"
     USERS ||--o{ PASSWORD_RESET_CODES : "tem"
     USERS ||--o{ PASSWORD_RESET_TOKENS : "tem"
+    USERS ||--o{ FAVORITOS : "favorita"
+    EVENTOS ||--o{ FAVORITOS : "e favoritado em"
     RAW_CRAWLS ||--o| EVENTOS : "origina"
 
     USERS {
@@ -542,6 +544,13 @@ erDiagram
         Date crawledAt
     }
 
+    FAVORITOS {
+        ObjectId _id PK
+        ObjectId userId FK
+        ObjectId eventoId FK
+        Date criadoEm
+    }
+
     EMAIL_VERIFICATION_TOKENS {
         ObjectId _id PK
         ObjectId userId FK
@@ -571,7 +580,7 @@ erDiagram
 - `users` → `emailVerificationTokens`: 1:N (mas tipicamente 0..1 ativo por vez).
 - `users` → `passwordResetCodes`/`passwordResetTokens`: 1:N (com cleanup ao usar).
 - `raw_crawls` → `eventos`: 1:1 (cada crawl gera no máximo 1 evento; pode gerar 0 se `isEvent=false`).
-- `eventos` não tem relação direta com `users` no MVP (favoritos são locais, no AsyncStorage do app).
+- `users` → `favoritos` ← `eventos`: N:N resolvida pela coleção associativa `favoritos` (um documento por par usuário/evento, com índice único em `{ userId, eventoId }`).
 
 ---
 
@@ -620,7 +629,7 @@ erDiagram
 ### 9.4 Favoritos
 | ID | Descrição | Status |
 |----|-----------|--------|
-| RF27 | O usuário deve poder favoritar/desfavoritar um evento. | ✅ (local, AsyncStorage) |
+| RF27 | O usuário deve poder favoritar/desfavoritar um evento. | ✅ (server-side, coleção `favoritos`) |
 | RF28 | O usuário deve poder visualizar a lista de favoritos numa aba dedicada. | ✅ |
 | RF29 | O usuário deve poder navegar do favorito direto para o detalhe do evento. | ✅ |
 
@@ -690,7 +699,7 @@ erDiagram
 | RN18 | Avatar via upload: tipos aceitos `image/jpeg | png | webp | gif`, tamanho ≤ 5 MB, key sempre `avatars/{userId}` (sobrescreve), cache-bust por `?v={timestamp}` na URL pública. |
 | RN19 | **Email não é editável** após o cadastro (decisão de produto). Apenas `nome` é editável via `PATCH /users/me`, entre 2 e 80 caracteres (após trim). |
 | RN20 | Alterar senha (usuário logado) exige **senha atual** como prova de identidade (defesa contra JWT vazado), nova senha deve cumprir as regras de força e ser diferente da atual. |
-| RN21 | Favoritos são 100% locais no app (AsyncStorage), sem sincronização entre dispositivos no MVP. |
+| RN21 | Favoritos são por **usuário**, não por dispositivo: ficam na coleção `favoritos` do MongoDB e acompanham a conta em qualquer aparelho. As rotas derivam o dono do JWT — não existe forma de ler ou alterar favoritos de outra pessoa. Favoritar/desfavoritar é idempotente. |
 | RN22 | Compartilhamento de evento usa a `Share API` nativa do Android, com mensagem composta de título + descrição + URL original. |
 | RN23 | **Antienumeration**: `resend-verification` sempre retorna 200 com mensagem genérica, mesmo se o email não existir. **Exceção consciente**: `forgot-password` retorna 404 explícito (decisão pragmática: "app de eventos locais não é banco"). |
 | RN24 | Toda request ao backend exige o header `x-api-key` (verificado pelo API Gateway antes da Lambda). Rotas protegidas exigem adicionalmente `Authorization: Bearer <jwt>`. |
@@ -971,7 +980,7 @@ RootNavigator (decide com base em token)
 | Detalhe evento | ✅ | ✅ | Operacional. |
 | Compartilhar evento | ✅ | n/a | Share API do Android. |
 | Browser in-app | ✅ | n/a | expo-web-browser. |
-| Favoritos | ✅ | n/a | AsyncStorage local. |
+| Favoritos | ✅ | ✅ | Coleção `favoritos` (referência userId + eventoId); toggle otimista no app. |
 | Cadastro / Login simples | ✅ | ✅ | Versão pré-verificação de email; será atualizada. |
 | Verificação de email | ✅ | ⏳ | Frontend pronto; backend a implementar (CONTRATO_VERIFICACAO_EMAIL.md). |
 | Recuperação de senha | ✅ | ⏳ | Frontend pronto (3 telas); backend a implementar (CONTRATO_RECUPERACAO_SENHA.md). |

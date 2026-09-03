@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CategoriaBadge } from '@/components/CategoriaBadge';
 import { EventoCover } from '@/components/EventoCover';
-import { useFavoritos } from '@/hooks/useFavoritos';
+import { useFavoritos } from '@/contexts/FavoritosContext';
 import { eventoService } from '@/services/evento.service';
 import { extractErrorMessage } from '@/services/api';
 import { colors, radius, spacing, typography } from '@/theme';

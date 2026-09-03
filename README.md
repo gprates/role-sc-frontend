@@ -14,8 +14,8 @@ Aplicativo mobile em **React Native + Expo** que exibe eventos culturais e munic
 | TypeScript 5.9 | Tipagem |
 | React Navigation 7 | Navegação (stack + bottom tabs) |
 | Axios | Cliente HTTP |
-| AsyncStorage | Persistência do JWT e dos favoritos |
-| Context API | Estado global de autenticação |
+| AsyncStorage | Persistência do JWT e do usuário da sessão |
+| Context API | Estado global de autenticação e de favoritos |
 | expo-linear-gradient, @expo/vector-icons | UI |
 | expo-web-browser | Abrir a publicação original em navegador in-app |
 | React Native `Share` | Compartilhamento nativo Android |
@@ -89,12 +89,12 @@ src/
 │   ├── auth.service.ts             # register, login, getMe, forgotPassword (stub)
 │   ├── evento.service.ts           # list, getById
 │   ├── metadata.service.ts         # getMunicipios, getCategorias
-│   └── favoritos.service.ts        # favoritos locais via AsyncStorage
+│   └── favoritos.service.ts        # list, listIds, add, remove (/favoritos da API)
 ├── contexts/
-│   └── AuthContext.tsx             # user, token, signIn, signUp, signOut
+│   ├── AuthContext.tsx             # user, token, signIn, signUp, signOut
+│   └── FavoritosContext.tsx        # favoritos do usuário logado, com toggle otimista
 ├── hooks/
-│   ├── useEventos.ts               # lista com filtros + paginação / infinite scroll
-│   └── useFavoritos.ts             # favoritos locais reativos
+│   └── useEventos.ts               # lista com filtros + paginação / infinite scroll
 ├── types/                          # Evento, User, Auth + respostas da API
 ├── theme/                          # colors, typography, spacing
 └── utils/                          # storage (AsyncStorage tipado), format (datas), constants
@@ -103,7 +103,7 @@ src/
 ### Padrões aplicados
 
 - **Service Layer** — toda chamada HTTP encapsulada em um `*.service.ts`, espelhando o backend
-- **Repository local** — `favoritos.service.ts` oferece a mesma interface que um endpoint server-side ofereceria, permitindo trocar a implementação sem tocar nas telas
+- **Estado global por contexto** — favoritos vivem em um único `FavoritosContext`, então Home, Detalhe e a aba Favoritos mostram sempre o mesmo coração, sem refetch entre telas
 - **Interceptors axios** — injetam `x-api-key` (env) e `Authorization: Bearer <token>` (AsyncStorage) automaticamente
 - **401 handler** — o interceptor dispara um logout automático via callback injetado pelo `AuthContext`
 - **Single-select filters** — os filtros de município e categoria são single-select para bater com o contrato atual do backend (`/eventos?municipio=...&categoria=...`)
@@ -120,8 +120,8 @@ src/
 - Abrir publicação original no navegador (`expo-web-browser`)
 - Compartilhar evento (Share nativo do Android)
 
-### Implementadas (local, sem backend)
-- **Favoritos** — persistidos em AsyncStorage
+### Favoritos
+- Persistidos por usuário no backend (`GET/POST/DELETE /favoritos`), sincronizados entre aparelhos
 
 ### UI pronta, aguardando endpoints do backend
 - Curtir, comentar, "eu vou!" — botões mostram "Em breve"

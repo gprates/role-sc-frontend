@@ -33,7 +33,6 @@ export type Categoria = (typeof CATEGORIAS)[number];
 export const STORAGE_KEYS = {
   token: '@rolesc/token',
   user: '@rolesc/user',
-  favoritos: '@rolesc/favoritos',
 } as const;
 
 export const APP_VERSION = '1.0.0';

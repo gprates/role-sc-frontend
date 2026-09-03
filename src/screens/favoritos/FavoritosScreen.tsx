@@ -1,11 +1,18 @@
 import React, { useCallback } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/EmptyState';
 import { EventoCard } from '@/components/EventoCard';
-import { useFavoritos } from '@/hooks/useFavoritos';
+import { useFavoritos } from '@/contexts/FavoritosContext';
 import { colors, spacing, typography } from '@/theme';
 
 import { FavoritosStackScreenProps } from '@/navigation/types';
@@ -13,15 +20,34 @@ import { FavoritosStackScreenProps } from '@/navigation/types';
 type Props = FavoritosStackScreenProps<'FavoritosList'>;
 
 export const FavoritosScreen: React.FC<Props> = ({ navigation }) => {
-  const { favoritos, toggle, refresh } = useFavoritos();
+  const {
+    favoritos,
+    loading,
+    refreshing,
+    loadingMore,
+    error,
+    pagination,
+    toggle,
+    refresh,
+    loadMore,
+  } = useFavoritos();
 
-  // Recarrega sempre que a aba ganhar foco, para refletir mudanças feitas no
-  // detalhe ou na home sem precisar de event bus.
+  // Revalida contra o servidor sempre que a aba ganha foco: o estado local já
+  // vem sincronizado pelo contexto (favoritar na Home reflete aqui na hora),
+  // mas isso pega mudanças feitas em outro aparelho.
   useFocusEffect(
     useCallback(() => {
       void refresh();
     }, [refresh]),
   );
+
+  const total = pagination?.total ?? favoritos.length;
+
+  const renderSubtitle = () => {
+    if (loading) return 'Carregando...';
+    if (error) return error;
+    return `${total} ${total === 1 ? 'evento salvo' : 'eventos salvos'}`;
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -43,19 +69,38 @@ export const FavoritosScreen: React.FC<Props> = ({ navigation }) => {
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.title}>Favoritos</Text>
-            <Text style={styles.subtitle}>
-              {favoritos.length}{' '}
-              {favoritos.length === 1 ? 'evento salvo' : 'eventos salvos'}
+            <Text style={[styles.subtitle, error ? styles.subtitleError : null]}>
+              {renderSubtitle()}
             </Text>
           </View>
         }
         ListEmptyComponent={
-          <EmptyState
-            icon="heart-outline"
-            title="Nenhum favorito ainda"
-            subtitle="Toque no coração de um evento para salvá-lo aqui."
+          loading ? null : (
+            <EmptyState
+              icon="heart-outline"
+              title="Nenhum favorito ainda"
+              subtitle="Toque no coração de um evento para salvá-lo aqui."
+            />
+          )
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.footerLoading}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : null
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor={colors.primary}
           />
         }
+        onEndReached={() => {
+          void loadMore();
+        }}
+        onEndReachedThreshold={0.4}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -78,5 +123,9 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  subtitleError: { color: colors.danger },
+  footerLoading: {
+    paddingVertical: spacing.lg,
   },
 });
