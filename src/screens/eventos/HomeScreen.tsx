@@ -16,11 +16,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/EmptyState';
 import { EventoCard } from '@/components/EventoCard';
 import { FilterChip } from '@/components/FilterChip';
+import { FilterSelectModal } from '@/components/FilterSelectModal';
+import { PeriodoFilterModal } from '@/components/PeriodoFilterModal';
 import { useEventos } from '@/hooks/useEventos';
 import { useFavoritos } from '@/hooks/useFavoritos';
 import { colors, radius, spacing, typography } from '@/theme';
 import { EventosFilter } from '@/types';
 import { CATEGORIAS, MUNICIPIOS_FIXOS } from '@/utils/constants';
+import { formatDayMonth } from '@/utils/dateRange';
+import { toBackendDate } from '@/utils/format';
 
 import { HomeStackScreenProps } from '@/navigation/types';
 
@@ -31,6 +35,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [municipio, setMunicipio] = useState<string | null>(null);
   const [categoria, setCategoria] = useState<string | null>(null);
+  const [dataInicio, setDataInicio] = useState<Date | null>(null);
+  const [dataFim, setDataFim] = useState<Date | null>(null);
+
+  const [municipioModalVisible, setMunicipioModalVisible] = useState(false);
+  const [categoriaModalVisible, setCategoriaModalVisible] = useState(false);
+  const [periodoModalVisible, setPeriodoModalVisible] = useState(false);
 
   React.useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search.trim()), 400);
@@ -42,8 +52,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       search: debouncedSearch || undefined,
       municipio: municipio ?? undefined,
       categoria: categoria ?? undefined,
+      dataInicio: dataInicio ? toBackendDate(dataInicio) : undefined,
+      dataFim: dataFim ? toBackendDate(dataFim) : undefined,
     }),
-    [debouncedSearch, municipio, categoria],
+    [debouncedSearch, municipio, categoria, dataInicio, dataFim],
   );
 
   const {
@@ -63,13 +75,25 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     let c = 0;
     if (municipio) c++;
     if (categoria) c++;
+    if (dataInicio || dataFim) c++;
     return c;
-  }, [municipio, categoria]);
+  }, [municipio, categoria, dataInicio, dataFim]);
 
   const clearFilters = useCallback(() => {
     setMunicipio(null);
     setCategoria(null);
+    setDataInicio(null);
+    setDataFim(null);
   }, []);
+
+  const periodoLabel = useMemo(() => {
+    if (dataInicio && dataFim) {
+      return `${formatDayMonth(dataInicio)} - ${formatDayMonth(dataFim)}`;
+    }
+    if (dataInicio) return `A partir de ${formatDayMonth(dataInicio)}`;
+    if (dataFim) return `Até ${formatDayMonth(dataFim)}`;
+    return 'Período';
+  }, [dataInicio, dataFim]);
 
   // IMPORTANTE: este header CONTÉM um TextInput (busca). Por isso não pode ser
   // passado como FUNÇÃO para `ListHeaderComponent` — a FlatList desmonta e
@@ -96,46 +120,50 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         />
       </View>
 
-      <Text style={styles.sectionLabel}>MUNICÍPIO</Text>
+      <Text style={styles.sectionLabel}>FILTROS</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipsRow}
       >
-        {MUNICIPIOS_FIXOS.map((m) => (
-          <FilterChip
-            key={m}
-            label={m}
-            active={municipio === m}
-            onPress={() => setMunicipio((prev) => (prev === m ? null : m))}
-          />
-        ))}
-      </ScrollView>
-
-      <Text style={styles.sectionLabel}>CATEGORIA</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipsRow}
-      >
-        {CATEGORIAS.map((c) => (
-          <FilterChip
-            key={c}
-            label={c}
-            active={categoria === c}
-            onPress={() => setCategoria((prev) => (prev === c ? null : c))}
-          />
-        ))}
-      </ScrollView>
-
-      <View style={styles.extraRow}>
+        <FilterChip
+          icon="location-outline"
+          label={municipio ?? 'Município'}
+          active={!!municipio}
+          onPress={() => setMunicipioModalVisible(true)}
+          trailing={
+            <Ionicons
+              name="chevron-down"
+              size={14}
+              color={municipio ? colors.chipActiveText : colors.chipText}
+            />
+          }
+        />
+        <FilterChip
+          icon="pricetag-outline"
+          label={categoria ?? 'Categoria'}
+          active={!!categoria}
+          onPress={() => setCategoriaModalVisible(true)}
+          trailing={
+            <Ionicons
+              name="chevron-down"
+              size={14}
+              color={categoria ? colors.chipActiveText : colors.chipText}
+            />
+          }
+        />
         <FilterChip
           icon="calendar-outline"
-          label="Período"
-          onPress={() => {
-            // Em breve: date-picker nativo. Por enquanto não faz nada.
-          }}
-          disabled
+          label={periodoLabel}
+          active={!!(dataInicio || dataFim)}
+          onPress={() => setPeriodoModalVisible(true)}
+          trailing={
+            <Ionicons
+              name="chevron-down"
+              size={14}
+              color={dataInicio || dataFim ? colors.chipActiveText : colors.chipText}
+            />
+          }
         />
         <FilterChip
           icon="options-outline"
@@ -147,7 +175,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           onPress={clearFilters}
           disabled={activeFilterCount === 0}
         />
-      </View>
+      </ScrollView>
 
       <View style={styles.resultRow}>
         {loading ? (
@@ -219,6 +247,37 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       />
+
+      <FilterSelectModal
+        visible={municipioModalVisible}
+        onClose={() => setMunicipioModalVisible(false)}
+        title="Município"
+        options={MUNICIPIOS_FIXOS}
+        selected={municipio}
+        onApply={setMunicipio}
+        searchPlaceholder="Buscar município..."
+      />
+
+      <FilterSelectModal
+        visible={categoriaModalVisible}
+        onClose={() => setCategoriaModalVisible(false)}
+        title="Categoria"
+        options={CATEGORIAS}
+        selected={categoria}
+        onApply={setCategoria}
+        searchPlaceholder="Buscar categoria..."
+      />
+
+      <PeriodoFilterModal
+        visible={periodoModalVisible}
+        onClose={() => setPeriodoModalVisible(false)}
+        dataInicio={dataInicio}
+        dataFim={dataFim}
+        onApply={(from, to) => {
+          setDataInicio(from);
+          setDataFim(to);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -263,12 +322,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   chipsRow: { gap: spacing.xs, paddingVertical: spacing.xxs },
-  extraRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    flexWrap: 'wrap',
-  },
   resultRow: {
     marginTop: spacing.md,
     marginBottom: spacing.sm,

@@ -5,6 +5,7 @@
 export const MUNICIPIOS_FIXOS = [
   'Itajaí',
   'Camboriú',
+  'Balneário Camboriú',
   'Porto Belo',
   'Itapema',
   'Bombinhas',
