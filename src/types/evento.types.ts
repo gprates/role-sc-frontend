@@ -37,11 +37,14 @@ export interface EventoResponse {
   data: Evento;
 }
 
+export type EventoStatus = 'ativos' | 'passados';
+
 export interface EventosFilter {
   municipio?: string;
   categoria?: string;
   dataInicio?: string;
   dataFim?: string;
+  status?: EventoStatus;
   search?: string;
   page?: number;
   limit?: number;

@@ -18,10 +18,11 @@ import { EventoCard } from '@/components/EventoCard';
 import { FilterChip } from '@/components/FilterChip';
 import { FilterSelectModal } from '@/components/FilterSelectModal';
 import { PeriodoFilterModal } from '@/components/PeriodoFilterModal';
+import { StatusFilterModal } from '@/components/StatusFilterModal';
 import { useEventos } from '@/hooks/useEventos';
 import { useFavoritos } from '@/hooks/useFavoritos';
 import { colors, radius, spacing, typography } from '@/theme';
-import { EventosFilter } from '@/types';
+import { EventosFilter, EventoStatus } from '@/types';
 import { CATEGORIAS, MUNICIPIOS_FIXOS } from '@/utils/constants';
 import { formatDayMonth } from '@/utils/dateRange';
 import { toBackendDate } from '@/utils/format';
@@ -37,6 +38,12 @@ const multiSelectLabel = (selected: string[], fallback: string): string => {
   return `${selected[0]} +${selected.length - 1}`;
 };
 
+const STATUS_LABELS: Record<'ativos' | 'passados' | 'todos', string> = {
+  ativos: 'Por vir',
+  passados: 'Já aconteceram',
+  todos: 'Todos',
+};
+
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -44,10 +51,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [categoria, setCategoria] = useState<string[]>([]);
   const [dataInicio, setDataInicio] = useState<Date | null>(null);
   const [dataFim, setDataFim] = useState<Date | null>(null);
+  // Padrão "ativos": eventos passados não interessam tanto ao usuário quanto
+  // os que ainda vão rolar, então a Home já abre filtrada pra "Por vir".
+  const [status, setStatus] = useState<EventoStatus | undefined>('ativos');
 
   const [municipioModalVisible, setMunicipioModalVisible] = useState(false);
   const [categoriaModalVisible, setCategoriaModalVisible] = useState(false);
   const [periodoModalVisible, setPeriodoModalVisible] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
 
   React.useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search.trim()), 400);
@@ -61,8 +72,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       categoria: categoria.length > 0 ? categoria.join(',') : undefined,
       dataInicio: dataInicio ? toBackendDate(dataInicio) : undefined,
       dataFim: dataFim ? toBackendDate(dataFim) : undefined,
+      status,
     }),
-    [debouncedSearch, municipio, categoria, dataInicio, dataFim],
+    [debouncedSearch, municipio, categoria, dataInicio, dataFim, status],
   );
 
   const {
@@ -83,14 +95,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (municipio.length > 0) c++;
     if (categoria.length > 0) c++;
     if (dataInicio || dataFim) c++;
+    // "ativos" é o padrão da tela — só conta como filtro ativo quando o
+    // usuário se afasta dele (passados ou todos).
+    if (status !== 'ativos') c++;
     return c;
-  }, [municipio, categoria, dataInicio, dataFim]);
+  }, [municipio, categoria, dataInicio, dataFim, status]);
 
   const clearFilters = useCallback(() => {
     setMunicipio([]);
     setCategoria([]);
     setDataInicio(null);
     setDataFim(null);
+    setStatus('ativos');
   }, []);
 
   const periodoLabel = useMemo(() => {
@@ -104,6 +120,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const municipioLabel = multiSelectLabel(municipio, 'Município');
   const categoriaLabel = multiSelectLabel(categoria, 'Categoria');
+  const statusLabel = STATUS_LABELS[status ?? 'todos'];
 
   // IMPORTANTE: este header CONTÉM um TextInput (busca). Por isso não pode ser
   // passado como FUNÇÃO para `ListHeaderComponent` — a FlatList desmonta e
@@ -136,6 +153,19 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipsRow}
       >
+        <FilterChip
+          icon="time-outline"
+          label={statusLabel}
+          active={status !== 'ativos'}
+          onPress={() => setStatusModalVisible(true)}
+          trailing={
+            <Ionicons
+              name="chevron-down"
+              size={14}
+              color={status !== 'ativos' ? colors.chipActiveText : colors.chipText}
+            />
+          }
+        />
         <FilterChip
           icon="location-outline"
           label={municipioLabel}
@@ -287,6 +317,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           setDataInicio(from);
           setDataFim(to);
         }}
+      />
+
+      <StatusFilterModal
+        visible={statusModalVisible}
+        onClose={() => setStatusModalVisible(false)}
+        value={status}
+        onApply={setStatus}
       />
     </SafeAreaView>
   );
