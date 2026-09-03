@@ -32,13 +32,13 @@ interface FilterSelectModalProps {
   onClose: () => void;
   title: string;
   options: readonly string[];
-  selected: string | null;
-  onApply: (value: string | null) => void;
+  selected: string[];
+  onApply: (values: string[]) => void;
   searchPlaceholder?: string;
 }
 
 /**
- * Modal de seleção única com busca (debounced) — usado pelos filtros de
+ * Modal de seleção múltipla com busca (debounced) — usado pelos filtros de
  * município e categoria. Mantém uma seleção "rascunho" própria: só grava no
  * filtro de verdade quando o usuário toca em Aplicar.
  */
@@ -52,7 +52,7 @@ export const FilterSelectModal: React.FC<FilterSelectModalProps> = ({
   searchPlaceholder = 'Buscar...',
 }) => {
   const [search, setSearch] = useState('');
-  const [draft, setDraft] = useState<string | null>(selected);
+  const [draft, setDraft] = useState<string[]>(selected);
   const debouncedSearch = useDebounce(search, 300);
 
   useEffect(() => {
@@ -67,6 +67,12 @@ export const FilterSelectModal: React.FC<FilterSelectModalProps> = ({
     if (!query) return options;
     return options.filter((o) => normalize(o).includes(query));
   }, [options, debouncedSearch]);
+
+  const toggleOption = (item: string) => {
+    setDraft((prev) =>
+      prev.includes(item) ? prev.filter((v) => v !== item) : [...prev, item],
+    );
+  };
 
   const handleApply = () => {
     onApply(draft);
@@ -112,17 +118,14 @@ export const FilterSelectModal: React.FC<FilterSelectModalProps> = ({
             data={filteredOptions}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
-              const isSelected = draft === item;
+              const isSelected = draft.includes(item);
               return (
-                <Pressable
-                  style={styles.option}
-                  onPress={() => setDraft((prev) => (prev === item ? null : item))}
-                >
+                <Pressable style={styles.option} onPress={() => toggleOption(item)}>
                   <Text style={[styles.optionLabel, isSelected && styles.optionLabelActive]}>
                     {item}
                   </Text>
                   <Ionicons
-                    name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                    name={isSelected ? 'checkbox' : 'square-outline'}
                     size={22}
                     color={isSelected ? colors.primary : colors.border}
                   />
@@ -143,13 +146,13 @@ export const FilterSelectModal: React.FC<FilterSelectModalProps> = ({
             <Button
               label="Limpar"
               variant="secondary"
-              onPress={() => setDraft(null)}
+              onPress={() => setDraft([])}
               fullWidth={false}
               style={styles.footerButton}
-              disabled={draft === null}
+              disabled={draft.length === 0}
             />
             <Button
-              label="Aplicar"
+              label={draft.length > 0 ? `Aplicar (${draft.length})` : 'Aplicar'}
               variant="primary"
               onPress={handleApply}
               fullWidth={false}

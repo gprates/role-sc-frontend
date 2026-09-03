@@ -30,11 +30,18 @@ import { HomeStackScreenProps } from '@/navigation/types';
 
 type Props = HomeStackScreenProps<'Home'>;
 
+/** "Município" (nada selecionado) | "Itajaí" (1) | "Itajaí +2" (várias). */
+const multiSelectLabel = (selected: string[], fallback: string): string => {
+  if (selected.length === 0) return fallback;
+  if (selected.length === 1) return selected[0];
+  return `${selected[0]} +${selected.length - 1}`;
+};
+
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [municipio, setMunicipio] = useState<string | null>(null);
-  const [categoria, setCategoria] = useState<string | null>(null);
+  const [municipio, setMunicipio] = useState<string[]>([]);
+  const [categoria, setCategoria] = useState<string[]>([]);
   const [dataInicio, setDataInicio] = useState<Date | null>(null);
   const [dataFim, setDataFim] = useState<Date | null>(null);
 
@@ -50,8 +57,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const filter = useMemo<EventosFilter>(
     () => ({
       search: debouncedSearch || undefined,
-      municipio: municipio ?? undefined,
-      categoria: categoria ?? undefined,
+      municipio: municipio.length > 0 ? municipio.join(',') : undefined,
+      categoria: categoria.length > 0 ? categoria.join(',') : undefined,
       dataInicio: dataInicio ? toBackendDate(dataInicio) : undefined,
       dataFim: dataFim ? toBackendDate(dataFim) : undefined,
     }),
@@ -73,15 +80,15 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const activeFilterCount = useMemo(() => {
     let c = 0;
-    if (municipio) c++;
-    if (categoria) c++;
+    if (municipio.length > 0) c++;
+    if (categoria.length > 0) c++;
     if (dataInicio || dataFim) c++;
     return c;
   }, [municipio, categoria, dataInicio, dataFim]);
 
   const clearFilters = useCallback(() => {
-    setMunicipio(null);
-    setCategoria(null);
+    setMunicipio([]);
+    setCategoria([]);
     setDataInicio(null);
     setDataFim(null);
   }, []);
@@ -94,6 +101,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (dataFim) return `Até ${formatDayMonth(dataFim)}`;
     return 'Período';
   }, [dataInicio, dataFim]);
+
+  const municipioLabel = multiSelectLabel(municipio, 'Município');
+  const categoriaLabel = multiSelectLabel(categoria, 'Categoria');
 
   // IMPORTANTE: este header CONTÉM um TextInput (busca). Por isso não pode ser
   // passado como FUNÇÃO para `ListHeaderComponent` — a FlatList desmonta e
@@ -128,27 +138,27 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         <FilterChip
           icon="location-outline"
-          label={municipio ?? 'Município'}
-          active={!!municipio}
+          label={municipioLabel}
+          active={municipio.length > 0}
           onPress={() => setMunicipioModalVisible(true)}
           trailing={
             <Ionicons
               name="chevron-down"
               size={14}
-              color={municipio ? colors.chipActiveText : colors.chipText}
+              color={municipio.length > 0 ? colors.chipActiveText : colors.chipText}
             />
           }
         />
         <FilterChip
           icon="pricetag-outline"
-          label={categoria ?? 'Categoria'}
-          active={!!categoria}
+          label={categoriaLabel}
+          active={categoria.length > 0}
           onPress={() => setCategoriaModalVisible(true)}
           trailing={
             <Ionicons
               name="chevron-down"
               size={14}
-              color={categoria ? colors.chipActiveText : colors.chipText}
+              color={categoria.length > 0 ? colors.chipActiveText : colors.chipText}
             />
           }
         />
