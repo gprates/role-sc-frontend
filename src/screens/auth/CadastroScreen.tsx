@@ -24,6 +24,11 @@ import { AuthStackScreenProps } from '@/navigation/types';
 
 type Props = AuthStackScreenProps<'Cadastro'>;
 
+// Mesmos limites da tela de editar perfil e do schema da API. Sem o teto aqui
+// dava pra criar a conta com um nome que a edição de perfil depois recusava.
+const NOME_MIN_LENGTH = 2;
+const NOME_MAX_LENGTH = 80;
+
 export const CadastroScreen: React.FC<Props> = ({ navigation, route }) => {
   const { signUp, submitting } = useAuth();
   const {
@@ -37,7 +42,13 @@ export const CadastroScreen: React.FC<Props> = ({ navigation, route }) => {
   const [confirmarSenha, setConfirmarSenha] = useState('');
 
   const validate = (): string | null => {
-    if (nome.trim().length < 2) return 'Informe seu nome completo.';
+    const nomeLimpo = nome.trim();
+    if (nomeLimpo.length < NOME_MIN_LENGTH) {
+      return 'Informe seu nome completo.';
+    }
+    if (nomeLimpo.length > NOME_MAX_LENGTH) {
+      return `O nome deve ter no máximo ${NOME_MAX_LENGTH} caracteres.`;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return 'Informe um email válido.';
     }
@@ -108,6 +119,7 @@ export const CadastroScreen: React.FC<Props> = ({ navigation, route }) => {
             autoCapitalize="words"
             value={nome}
             onChangeText={setNome}
+            maxLength={NOME_MAX_LENGTH}
           />
           <Input
             icon="mail-outline"
