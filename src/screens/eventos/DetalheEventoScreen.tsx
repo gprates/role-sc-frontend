@@ -4,7 +4,6 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -22,6 +21,7 @@ import { extractErrorMessage } from '@/services/api';
 import { colors, radius, spacing, typography } from '@/theme';
 import { Evento } from '@/types';
 import { formatLongDate, formatShortDate } from '@/utils/format';
+import { compartilharEvento } from '@/utils/share';
 
 import { HomeStackScreenProps } from '@/navigation/types';
 
@@ -65,23 +65,7 @@ export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const handleShare = async () => {
     if (!evento) return;
-    try {
-      // Montado por partes e filtrado: eventos sem descrição deixavam duas
-      // linhas em branco no meio da mensagem quando isso era um template só.
-      const linhas = [
-        evento.titulo,
-        evento.descricao,
-        `Veja mais: ${evento.url}`,
-        'Compartilhado pelo app Rolê SC',
-      ].filter(Boolean);
-
-      await Share.share({
-        message: linhas.join('\n\n'),
-        title: evento.titulo,
-      });
-    } catch (err) {
-      console.warn('[DetalheEvento.share] falhou', err);
-    }
+    await compartilharEvento(evento);
   };
 
   const openOriginalUrl = async () => {

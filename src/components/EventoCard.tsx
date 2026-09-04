@@ -7,6 +7,7 @@ import { EventoCover } from './EventoCover';
 import { colors, radius, spacing, typography } from '@/theme';
 import { Evento } from '@/types';
 import { formatCardDate } from '@/utils/format';
+import { compartilharEvento } from '@/utils/share';
 
 interface EventoCardProps {
   evento: Evento;
@@ -83,26 +84,43 @@ export const EventoCard: React.FC<EventoCardProps> = ({
             <Text style={styles.municipioText}>{evento.municipio}</Text>
           </View>
 
-          {/* Pressable aninhado dentro do Pressable do card: o toque no ícone
-              é capturado aqui e NÃO dispara o `onPress` do card — mesmo
+          {/* Pressables aninhados dentro do Pressable do card: o toque no
+              ícone é capturado aqui e NÃO dispara o `onPress` do card — mesmo
               arranjo já usado pelo coração sobre a capa. */}
-          {onPressComentarios ? (
+          <View style={styles.footerAcoes}>
+            {onPressComentarios ? (
+              <Pressable
+                onPress={onPressComentarios}
+                hitSlop={8}
+                style={styles.acaoBtn}
+                accessibilityLabel={`Ver comentários de ${evento.titulo}`}
+              >
+                <Ionicons
+                  name="chatbubble-outline"
+                  size={16}
+                  color={colors.textMuted}
+                />
+                <Text style={styles.acaoCount}>
+                  {evento.totalComentarios ?? 0}
+                </Text>
+              </Pressable>
+            ) : null}
+
             <Pressable
-              onPress={onPressComentarios}
+              onPress={() => {
+                void compartilharEvento(evento);
+              }}
               hitSlop={8}
-              style={styles.comentariosBtn}
-              accessibilityLabel={`Ver comentários de ${evento.titulo}`}
+              style={styles.acaoBtn}
+              accessibilityLabel={`Compartilhar ${evento.titulo}`}
             >
               <Ionicons
-                name="chatbubble-outline"
+                name="share-social-outline"
                 size={16}
                 color={colors.textMuted}
               />
-              <Text style={styles.comentariosCount}>
-                {evento.totalComentarios ?? 0}
-              </Text>
             </Pressable>
-          ) : null}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -170,14 +188,19 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.pill,
   },
-  comentariosBtn: {
+  footerAcoes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+  },
+  acaoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xxs,
     paddingVertical: 4,
     paddingHorizontal: spacing.xs,
   },
-  comentariosCount: {
+  acaoCount: {
     ...typography.caption,
     color: colors.textMuted,
     fontWeight: '600',
