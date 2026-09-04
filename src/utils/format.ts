@@ -98,3 +98,35 @@ export const toBackendDate = (d: Date): string => {
   const yy = d.getFullYear();
   return `${yy}-${mm}-${dd}`;
 };
+
+/**
+ * Formata como "agora", "há 5 min", "há 2 h", "há 3 d", "há 2 sem" — o carimbo
+ * curto dos comentários, no estilo Instagram.
+ *
+ * Passado ~4 semanas vira data absoluta ("12/03/2026"): "há 37 sem" não diz
+ * nada útil pra ninguém. Diferenças negativas (relógio do aparelho adiantado
+ * em relação ao servidor) são tratadas como "agora" em vez de virarem
+ * "há -1 min".
+ */
+export const formatRelativeTime = (iso: string | null | undefined): string => {
+  const d = parseIso(iso);
+  if (!d) return '';
+
+  const segundos = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+
+  if (segundos < 60) return 'agora';
+
+  const minutos = Math.floor(segundos / 60);
+  if (minutos < 60) return `há ${minutos} min`;
+
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `há ${horas} h`;
+
+  const dias = Math.floor(horas / 24);
+  if (dias < 7) return `há ${dias} d`;
+
+  const semanas = Math.floor(dias / 7);
+  if (semanas < 4) return `há ${semanas} sem`;
+
+  return formatShortDate(iso);
+};

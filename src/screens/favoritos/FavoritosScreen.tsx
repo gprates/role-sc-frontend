@@ -64,6 +64,12 @@ export const FavoritosScreen: React.FC<Props> = ({ navigation }) => {
             onPress={() =>
               navigation.navigate('DetalheEvento', { id: item._id })
             }
+            onPressComentarios={() =>
+              navigation.navigate('DetalheEvento', {
+                id: item._id,
+                abrirComentarios: true,
+              })
+            }
           />
         )}
         ListHeaderComponent={

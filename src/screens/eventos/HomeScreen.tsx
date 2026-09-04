@@ -258,6 +258,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             onToggleFavorito={() => {
               void toggle(item);
             }}
+            onPressComentarios={() =>
+              navigation.navigate('DetalheEvento', {
+                id: item._id,
+                abrirComentarios: true,
+              })
+            }
           />
         )}
         ListHeaderComponent={renderHeader()}

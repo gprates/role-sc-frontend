@@ -13,7 +13,10 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <KeyboardProvider>
+        {/* As duas flags dizem à lib que as barras do sistema são translúcidas
+            (edge-to-edge é obrigatório no Android 15+), pra ela descontar a
+            barra de navegação ao calcular a altura do teclado. */}
+        <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
           <ScreenBackground>
             <StatusBar style="dark" />
             <AuthProvider>

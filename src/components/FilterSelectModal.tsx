@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,6 +9,13 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+// Mesmo motivo do ComentariosModal: o KeyboardAvoidingView do RN não funciona
+// dentro de <Modal> no Android, e este sheet tem campo de busca.
+import {
+  KeyboardAvoidingView,
+  useKeyboardState,
+} from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/Button';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -79,15 +84,32 @@ export const FilterSelectModal: React.FC<FilterSelectModalProps> = ({
     onClose();
   };
 
+  const insets = useSafeAreaInsets();
+  // Com o teclado aberto ele já cobre a barra de navegação — somar o inset
+  // abriria um vão morto entre o sheet e o teclado.
+  const tecladoAberto = useKeyboardState((estado) => estado.isVisible);
+  const paddingInferior = tecladoAberto
+    ? spacing.lg
+    : Math.max(insets.bottom, spacing.lg);
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      // Edge-to-edge (obrigatório no Android 15+): sem estas duas o sheet é
+      // recortado pela barra de navegação do sistema.
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <Pressable style={styles.backdrop} onPress={onClose} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
         style={styles.sheetWrapper}
         pointerEvents="box-none"
       >
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: paddingInferior }]}>
           <View style={styles.handle} />
           <View style={styles.headerRow}>
             <Text style={styles.title}>{title}</Text>
@@ -179,7 +201,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xxl,
     borderTopRightRadius: radius.xxl,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
+    // paddingBottom entra inline: depende do inset da barra de navegação.
     maxHeight: '80%',
   },
   handle: {

@@ -1,10 +1,15 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import {
   createBottomTabNavigator,
   BottomTabBarProps,
+  BottomTabNavigationOptions,
 } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+  getFocusedRouteNameFromRoute,
+  type RouteProp,
+} from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -75,12 +80,44 @@ const TABS: TabDef[] = [
   { name: 'PerfilTab', label: 'Perfil', icon: 'person-outline' },
 ];
 
+/**
+ * Esconde o tab bar enquanto a aba está mostrando o detalhe do evento.
+ *
+ * Os dois são `position: absolute; bottom: 0` — o tab bar (com `elevation: 8`)
+ * ficava exatamente por cima da barra de ações do detalhe e engolia comentar,
+ * curtir, "Eu vou", compartilhar e favoritar. Some com ele porque o detalhe é
+ * uma tela empurrada na pilha e já tem o próprio botão de voltar no topo;
+ * empilhar as duas barras custaria ~226px de rodapé.
+ *
+ * `getFocusedRouteNameFromRoute` devolve `undefined` enquanto o stack aninhado
+ * ainda não tem estado — ou seja, na rota inicial da aba, quando o tab bar
+ * DEVE aparecer. Por isso a comparação é com o nome exato da tela.
+ */
+const esconderTabBarNoDetalhe = ({
+  route,
+}: {
+  route: RouteProp<AppTabsParamList, keyof AppTabsParamList>;
+}): BottomTabNavigationOptions =>
+  getFocusedRouteNameFromRoute(route) === 'DetalheEvento'
+    ? { tabBarStyle: { display: 'none' } }
+    : {};
+
 const CustomTabBar: React.FC<BottomTabBarProps> = ({
   state,
   descriptors,
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
+
+  // Tab bar custom não herda `tabBarStyle` sozinho — quem decide o que fazer
+  // com ele é este componente. Só o `display: 'none'` é interpretado, que é o
+  // que `esconderTabBarNoDetalhe` usa.
+  // O cast existe porque `tabBarStyle` é tipado com valores animados; aqui só
+  // passamos estilo estático, então achatar para ViewStyle é seguro.
+  const estiloDaAbaFocada = StyleSheet.flatten(
+    descriptors[state.routes[state.index].key].options.tabBarStyle,
+  ) as ViewStyle | undefined;
+  if (estiloDaAbaFocada?.display === 'none') return null;
 
   return (
     <View
@@ -155,8 +192,16 @@ export const AppNavigator: React.FC = () => {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name="EventosTab" component={HomeStackNavigator} />
-      <Tabs.Screen name="FavoritosTab" component={FavoritosStackNavigator} />
+      <Tabs.Screen
+        name="EventosTab"
+        component={HomeStackNavigator}
+        options={esconderTabBarNoDetalhe}
+      />
+      <Tabs.Screen
+        name="FavoritosTab"
+        component={FavoritosStackNavigator}
+        options={esconderTabBarNoDetalhe}
+      />
       <Tabs.Screen name="PerfilTab" component={PerfilStackNavigator} />
     </Tabs.Navigator>
   );

@@ -5,6 +5,7 @@ import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 
 import { Button } from '@/components/Button';
 import { colors, radius, spacing, typography } from '@/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   DateRange,
   QUICK_RANGE_OPTIONS,
@@ -77,11 +78,27 @@ export const PeriodoFilterModal: React.FC<PeriodoFilterModalProps> = ({
     onClose();
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      // Edge-to-edge (obrigatório no Android 15+): sem estas duas o sheet é
+      // recortado pela barra de navegação do sistema.
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheetWrapper} pointerEvents="box-none">
-        <View style={styles.sheet}>
+        <View
+          style={[
+            styles.sheet,
+            { paddingBottom: Math.max(insets.bottom, spacing.lg) },
+          ]}
+        >
           <View style={styles.handle} />
           <View style={styles.headerRow}>
             <Text style={styles.title}>Período</Text>
@@ -158,7 +175,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radius.xxl,
     borderTopRightRadius: radius.xxl,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
+    // paddingBottom entra inline: depende do inset da barra de navegação.
     paddingHorizontal: spacing.xl,
   },
   handle: {

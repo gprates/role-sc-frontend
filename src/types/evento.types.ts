@@ -17,6 +17,9 @@ export interface Evento {
   url: string;
   publishedAt: string;
   processedAt: string;
+  // Anexado pelas agregações de listagem (GET /eventos e GET /favoritos).
+  // Ausente em GET /eventos/:id, onde a contagem real vem do useComentarios.
+  totalComentarios?: number;
 }
 
 export interface Pagination {

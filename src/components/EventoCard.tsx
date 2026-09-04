@@ -13,6 +13,8 @@ interface EventoCardProps {
   onPress: () => void;
   favorito?: boolean;
   onToggleFavorito?: () => void;
+  /** Quando passado, mostra o contador de comentários no rodapé do card. */
+  onPressComentarios?: () => void;
 }
 
 export const EventoCard: React.FC<EventoCardProps> = ({
@@ -20,6 +22,7 @@ export const EventoCard: React.FC<EventoCardProps> = ({
   onPress,
   favorito = false,
   onToggleFavorito,
+  onPressComentarios,
 }) => {
   const data = formatCardDate(evento.dataInicio, evento.horario);
 
@@ -75,8 +78,31 @@ export const EventoCard: React.FC<EventoCardProps> = ({
           </View>
         ) : null}
 
-        <View style={styles.municipioChip}>
-          <Text style={styles.municipioText}>{evento.municipio}</Text>
+        <View style={styles.footerRow}>
+          <View style={styles.municipioChip}>
+            <Text style={styles.municipioText}>{evento.municipio}</Text>
+          </View>
+
+          {/* Pressable aninhado dentro do Pressable do card: o toque no ícone
+              é capturado aqui e NÃO dispara o `onPress` do card — mesmo
+              arranjo já usado pelo coração sobre a capa. */}
+          {onPressComentarios ? (
+            <Pressable
+              onPress={onPressComentarios}
+              hitSlop={8}
+              style={styles.comentariosBtn}
+              accessibilityLabel={`Ver comentários de ${evento.titulo}`}
+            >
+              <Ionicons
+                name="chatbubble-outline"
+                size={16}
+                color={colors.textMuted}
+              />
+              <Text style={styles.comentariosCount}>
+                {evento.totalComentarios ?? 0}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Pressable>
@@ -132,13 +158,29 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     flex: 1,
   },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
   municipioChip: {
-    alignSelf: 'flex-start',
     backgroundColor: colors.chipBackground,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    marginTop: spacing.xs,
+  },
+  comentariosBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingVertical: 4,
+    paddingHorizontal: spacing.xs,
+  },
+  comentariosCount: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontWeight: '600',
   },
   municipioText: {
     ...typography.caption,

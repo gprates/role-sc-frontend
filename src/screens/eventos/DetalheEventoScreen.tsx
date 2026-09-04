@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CategoriaBadge } from '@/components/CategoriaBadge';
 import { EventoCover } from '@/components/EventoCover';
+import { useComentarios } from '@/hooks/useComentarios';
 import { useFavoritos } from '@/contexts/FavoritosContext';
 import { eventoService } from '@/services/evento.service';
 import { extractErrorMessage } from '@/services/api';
@@ -28,19 +29,22 @@ import { ComentariosModal } from './ComentariosModal';
 
 type Props = HomeStackScreenProps<'DetalheEvento'>;
 
-// Números mockados — likes, comentários e "eu vou" ainda não têm endpoint.
-const MOCK_LIKES = 187;
-const MOCK_COMENTARIOS = 12;
-
 export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { id } = route.params;
+  const { id, abrirComentarios } = route.params;
 
   const [evento, setEvento] = useState<Evento | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [comentariosOpen, setComentariosOpen] = useState(false);
+  // Já nasce aberto quando a navegação veio do ícone de comentário do card.
+  const [comentariosOpen, setComentariosOpen] = useState(
+    abrirComentarios === true,
+  );
 
   const { isFavorito, toggle } = useFavoritos();
+
+  // Montado aqui, e não dentro do modal, porque o contador da barra de ações
+  // precisa do total mesmo com o modal fechado.
+  const comentarios = useComentarios(id);
 
   const loadEvento = useCallback(async () => {
     setLoading(true);
@@ -62,8 +66,17 @@ export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleShare = async () => {
     if (!evento) return;
     try {
+      // Montado por partes e filtrado: eventos sem descrição deixavam duas
+      // linhas em branco no meio da mensagem quando isso era um template só.
+      const linhas = [
+        evento.titulo,
+        evento.descricao,
+        `Veja mais: ${evento.url}`,
+        'Compartilhado pelo app Rolê SC',
+      ].filter(Boolean);
+
       await Share.share({
-        message: `${evento.titulo}\n\n${evento.descricao ?? ''}\n\nVeja mais: ${evento.url}`,
+        message: linhas.join('\n\n'),
         title: evento.titulo,
       });
     } catch (err) {
@@ -198,8 +211,7 @@ export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
       </ScrollView>
 
       <ActionBar
-        likes={MOCK_LIKES}
-        comentarios={MOCK_COMENTARIOS}
+        comentarios={comentarios.total}
         favorito={favorito}
         onToggleFavorito={handleToggleFavorito}
         onShare={handleShare}
@@ -209,6 +221,18 @@ export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
       <ComentariosModal
         visible={comentariosOpen}
         onClose={() => setComentariosOpen(false)}
+        comentarios={comentarios.comentarios}
+        loading={comentarios.loading}
+        refreshing={comentarios.refreshing}
+        loadingMore={comentarios.loadingMore}
+        error={comentarios.error}
+        total={comentarios.total}
+        onRefresh={comentarios.refresh}
+        onLoadMore={comentarios.loadMore}
+        onCriar={comentarios.criar}
+        onEditar={comentarios.editar}
+        onExcluir={comentarios.excluir}
+        onToggleCurtida={comentarios.toggleCurtida}
       />
     </View>
   );
@@ -233,7 +257,6 @@ const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value }) => (
 );
 
 interface ActionBarProps {
-  likes: number;
   comentarios: number;
   favorito: boolean;
   onToggleFavorito: () => void;
@@ -241,25 +264,42 @@ interface ActionBarProps {
   onOpenComentarios: () => void;
 }
 
+/**
+ * Barra fixa do rodapé: favoritar, comentar, compartilhar — nessa ordem.
+ *
+ * O coração é o MESMO gesto do coração do EventoCard na Home (favoritar), com
+ * o mesmo ícone e a mesma cor. Antes o detalhe usava um marcador de página pra
+ * favoritar e o coração pra uma curtida mockada, o que dava dois símbolos
+ * diferentes pra ideia de "salvar" e um botão que não fazia nada.
+ */
 const ActionBar: React.FC<ActionBarProps> = ({
-  likes,
   comentarios,
   favorito,
   onToggleFavorito,
   onShare,
   onOpenComentarios,
 }) => {
-  const notifyInProgress = () =>
-    Alert.alert('Em breve', 'Essa funcionalidade estará disponível em breve.');
-
   return (
     <SafeAreaView style={actionStyles.safe} edges={['bottom']}>
       <View style={actionStyles.bar}>
-        <Pressable onPress={notifyInProgress} style={actionStyles.item}>
-          <Ionicons name="heart-outline" size={22} color={colors.textSecondary} />
-          <Text style={actionStyles.count}>{likes}</Text>
+        <Pressable
+          onPress={onToggleFavorito}
+          style={actionStyles.item}
+          accessibilityLabel={
+            favorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos'
+          }
+        >
+          <Ionicons
+            name={favorito ? 'heart' : 'heart-outline'}
+            size={22}
+            color={favorito ? colors.heart : colors.textSecondary}
+          />
         </Pressable>
-        <Pressable onPress={onOpenComentarios} style={actionStyles.item}>
+        <Pressable
+          onPress={onOpenComentarios}
+          style={actionStyles.item}
+          accessibilityLabel="Ver comentários"
+        >
           <Ionicons
             name="chatbubble-outline"
             size={22}
@@ -267,26 +307,15 @@ const ActionBar: React.FC<ActionBarProps> = ({
           />
           <Text style={actionStyles.count}>{comentarios}</Text>
         </Pressable>
-        <Pressable onPress={notifyInProgress} style={actionStyles.item}>
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={22}
-            color={colors.textSecondary}
-          />
-          <Text style={actionStyles.countSmall}>Eu vou</Text>
-        </Pressable>
-        <Pressable onPress={onShare} style={actionStyles.item}>
+        <Pressable
+          onPress={onShare}
+          style={actionStyles.item}
+          accessibilityLabel="Compartilhar evento"
+        >
           <Ionicons
             name="share-social-outline"
             size={22}
             color={colors.textSecondary}
-          />
-        </Pressable>
-        <Pressable onPress={onToggleFavorito} style={actionStyles.item}>
-          <Ionicons
-            name={favorito ? 'bookmark' : 'bookmark-outline'}
-            size={22}
-            color={favorito ? colors.primary : colors.textSecondary}
           />
         </Pressable>
       </View>
@@ -414,6 +443,12 @@ const actionStyles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    // O tab bar já é escondido nesta tela (ver `esconderTabBarNoDetalhe` no
+    // AppNavigator), mas ele tem `elevation: 8` — se algum dia voltar a ser
+    // renderizado aqui, sem isto ele cobriria a barra inteira de novo, que é
+    // exatamente o bug que deixava o botão de comentários inalcançável.
+    elevation: 12,
+    zIndex: 12,
   },
   bar: {
     flexDirection: 'row',
@@ -421,15 +456,11 @@ const actionStyles = StyleSheet.create({
   },
   item: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: spacing.xxs,
     paddingVertical: spacing.xs,
   },
   count: { ...typography.caption, color: colors.textSecondary },
-  countSmall: {
-    ...typography.micro,
-    color: colors.textSecondary,
-    letterSpacing: 0,
-  },
 });

@@ -11,14 +11,19 @@ export type AuthStackParamList = {
   RedefinirSenha: { email: string; resetToken: string };
 };
 
+/**
+ * `abrirComentarios` faz o detalhe já abrir com o modal de comentários por
+ * cima — é o que o ícone de comentário do card da listagem usa, pra levar
+ * direto à conversa em vez de largar a pessoa no topo da tela.
+ */
 export type HomeStackParamList = {
   Home: undefined;
-  DetalheEvento: { id: string };
+  DetalheEvento: { id: string; abrirComentarios?: boolean };
 };
 
 export type FavoritosStackParamList = {
   FavoritosList: undefined;
-  DetalheEvento: { id: string };
+  DetalheEvento: { id: string; abrirComentarios?: boolean };
 };
 
 export type PerfilStackParamList = {
