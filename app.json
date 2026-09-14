@@ -7,7 +7,9 @@
     "userInterfaceStyle": "light",
     "scheme": "rolesc",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#E6F4FB"
     },
@@ -16,7 +18,8 @@
     ],
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#1E88E5"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E6F4FB"
       },
       "package": "com.rolesc.app"
     },

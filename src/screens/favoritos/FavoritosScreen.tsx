@@ -81,9 +81,15 @@ export const FavoritosScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         }
         ListEmptyComponent={
-          loading ? null : (
+          loading ? null : error ? (
             <EmptyState
-              icon="heart-outline"
+              icon="cloud-offline-outline"
+              title="Não foi possível carregar"
+              subtitle="Puxe para baixo para tentar de novo."
+            />
+          ) : (
+            <EmptyState
+              image={require('../../../assets/images/moinho.png')}
               title="Nenhum favorito ainda"
               subtitle="Toque no coração de um evento para salvá-lo aqui."
             />

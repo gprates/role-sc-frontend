@@ -63,7 +63,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         bottomOffset={24}
       >
         <View style={styles.header}>
-          <Logo size={88} />
+          {/* O logo é detalhado: abaixo de ~120px o texto dele fica ilegível. */}
+          <Logo size={140} />
           <Text style={styles.title}>Rolê SC</Text>
           <Text style={styles.subtitle}>Eventos do litoral catarinense</Text>
         </View>

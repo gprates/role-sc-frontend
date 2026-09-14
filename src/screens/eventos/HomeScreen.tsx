@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -37,6 +38,20 @@ const multiSelectLabel = (selected: string[], fallback: string): string => {
   if (selected.length === 1) return selected[0];
   return `${selected[0]} +${selected.length - 1}`;
 };
+
+/**
+ * Capivara "sentada" atrás do primeiro card, como no site. Ela rola junto com
+ * a lista (fica no fim do header, não é overlay fixo): se ficasse presa na
+ * tela, o card sairia de baixo dela e a ilusão de estar apoiada se perderia.
+ * ~82% da altura fica acima do card; os ombros somem por trás dele.
+ */
+const CAPIVARA_SOURCE = require('../../../assets/images/capivara.png');
+const CAPIVARA_WIDTH = 92;
+const CAPIVARA_HEIGHT = (() => {
+  const { width, height } = Image.resolveAssetSource(CAPIVARA_SOURCE);
+  return CAPIVARA_WIDTH * (height / width);
+})();
+const CAPIVARA_VISIBLE_RATIO = 0.82;
 
 const STATUS_LABELS: Record<'ativos' | 'passados' | 'todos', string> = {
   ativos: 'Por vir',
@@ -122,6 +137,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const categoriaLabel = multiSelectLabel(categoria, 'Categoria');
   const statusLabel = STATUS_LABELS[status ?? 'todos'];
 
+  const showCapivara = eventos.length > 0;
+
   // IMPORTANTE: este header CONTÉM um TextInput (busca). Por isso não pode ser
   // passado como FUNÇÃO para `ListHeaderComponent` — a FlatList desmonta e
   // remonta o header a cada mudança de referência da função, fazendo o
@@ -129,7 +146,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   // Solução: chamar `renderHeader()` na prop pra passar JSX (elemento) — a
   // FlatList apenas reconcilia a árvore mantendo a instância do TextInput viva.
   const renderHeader = () => (
-    <View style={styles.headerContent}>
+    <View
+      style={[styles.headerContent, showCapivara && styles.headerWithCapivara]}
+    >
       <Text style={styles.greeting}>Olá! 👋</Text>
       <Text style={styles.title}>O que vai rolar hoje?</Text>
 
@@ -231,6 +250,22 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
         )}
       </View>
+
+      {/* Decorativa e estática (sem animação — no site a de "espiar" parecia
+          bug). Vaza para baixo do header e o primeiro card, desenhado depois,
+          cobre os ombros. No Android quem garante isso é a `elevation` do
+          card; aqui não pode ter elevation/zIndex senão ela passa por cima. */}
+      {showCapivara ? (
+        <View
+          style={styles.capivara}
+          pointerEvents="none"
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Image source={CAPIVARA_SOURCE} style={styles.capivaraImage} />
+        </View>
+      ) : null}
     </View>
   );
 
@@ -268,9 +303,15 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         )}
         ListHeaderComponent={renderHeader()}
         ListEmptyComponent={
-          loading ? null : (
+          loading ? null : error ? (
             <EmptyState
-              icon="calendar-outline"
+              icon="cloud-offline-outline"
+              title="Não foi possível carregar"
+              subtitle="Puxe para baixo para tentar de novo."
+            />
+          ) : (
+            <EmptyState
+              image={require('../../../assets/images/barco.png')}
               title="Nenhum evento encontrado"
               subtitle="Tente ajustar os filtros ou volte mais tarde."
             />
@@ -346,6 +387,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     gap: spacing.xs,
   },
+  // Respiro extra pra cabeça da capivara não encostar nos chips de filtro.
+  headerWithCapivara: { paddingBottom: spacing.xxl },
+  capivara: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: -CAPIVARA_HEIGHT * (1 - CAPIVARA_VISIBLE_RATIO),
+    width: CAPIVARA_WIDTH,
+    height: CAPIVARA_HEIGHT,
+  },
+  capivaraImage: { width: '100%', height: '100%', resizeMode: 'contain' },
   greeting: { ...typography.body, color: colors.textSecondary },
   title: {
     ...typography.display,
