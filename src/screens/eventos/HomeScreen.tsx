@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Image,
-  Pressable,
+  Platform,
   RefreshControl,
   ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   TextInput,
@@ -19,11 +19,13 @@ import { EventoCard } from '@/components/EventoCard';
 import { FilterChip } from '@/components/FilterChip';
 import { FilterSelectModal } from '@/components/FilterSelectModal';
 import { PeriodoFilterModal } from '@/components/PeriodoFilterModal';
+import { SecaoPeriodoHeader } from '@/components/SecaoPeriodoHeader';
 import { StatusFilterModal } from '@/components/StatusFilterModal';
 import { useEventos } from '@/hooks/useEventos';
 import { useFavoritos } from '@/contexts/FavoritosContext';
 import { colors, radius, spacing, typography } from '@/theme';
-import { EventosFilter, EventoStatus } from '@/types';
+import { Evento, EventosFilter, EventoStatus } from '@/types';
+import { agruparPorPeriodo } from '@/utils/agruparPorPeriodo';
 import { CATEGORIAS, MUNICIPIOS_FIXOS } from '@/utils/constants';
 import { formatDayMonth } from '@/utils/dateRange';
 import { toBackendDate } from '@/utils/format';
@@ -40,9 +42,9 @@ const multiSelectLabel = (selected: string[], fallback: string): string => {
 };
 
 /**
- * Capivara "sentada" atrás do primeiro card, como no site. Ela rola junto com
- * a lista (fica no fim do header, não é overlay fixo): se ficasse presa na
- * tela, o card sairia de baixo dela e a ilusão de estar apoiada se perderia.
+ * Capivara "sentada" atrás do primeiro card da primeira seção, como no site.
+ * Fica dentro do item da lista, presa ao card (não à largura da tela), então
+ * rola junto com ele e a ilusão de estar apoiada se mantém.
  * ~82% da altura fica acima do card; os ombros somem por trás dele.
  */
 const CAPIVARA_SOURCE = require('../../../assets/images/capivara.png');
@@ -58,6 +60,13 @@ const STATUS_LABELS: Record<'ativos' | 'passados' | 'todos', string> = {
   passados: 'Já aconteceram',
   todos: 'Todos',
 };
+
+interface SecaoLista {
+  key: string;
+  /** Vazio = lista única, sem cabeçalho de seção. */
+  label: string;
+  data: Evento[];
+}
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [search, setSearch] = useState('');
@@ -137,18 +146,29 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const categoriaLabel = multiSelectLabel(categoria, 'Categoria');
   const statusLabel = STATUS_LABELS[status ?? 'todos'];
 
-  const showCapivara = eventos.length > 0;
+  // Só "Por vir" é agrupado por período; nos outros status a lista é única.
+  // Recalcula sobre a lista acumulada a cada página que chega do scroll
+  // infinito, então uma seção pode crescer conforme mais eventos carregam.
+  const secoes = useMemo<SecaoLista[]>(() => {
+    if (status === 'ativos') {
+      return agruparPorPeriodo(eventos).map(({ key, label, eventos: data }) => ({
+        key,
+        label,
+        data,
+      }));
+    }
+    return eventos.length > 0 ? [{ key: 'todos', label: '', data: eventos }] : [];
+  }, [eventos, status]);
+  const primeiraSecaoKey = secoes[0]?.key;
 
   // IMPORTANTE: este header CONTÉM um TextInput (busca). Por isso não pode ser
-  // passado como FUNÇÃO para `ListHeaderComponent` — a FlatList desmonta e
+  // passado como FUNÇÃO para `ListHeaderComponent` — a lista desmonta e
   // remonta o header a cada mudança de referência da função, fazendo o
   // TextInput perder foco e o teclado fechar a cada keystroke.
   // Solução: chamar `renderHeader()` na prop pra passar JSX (elemento) — a
-  // FlatList apenas reconcilia a árvore mantendo a instância do TextInput viva.
+  // lista apenas reconcilia a árvore mantendo a instância do TextInput viva.
   const renderHeader = () => (
-    <View
-      style={[styles.headerContent, showCapivara && styles.headerWithCapivara]}
-    >
+    <View style={styles.headerContent}>
       <Text style={styles.greeting}>Olá! 👋</Text>
       <Text style={styles.title}>O que vai rolar hoje?</Text>
 
@@ -250,23 +270,24 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
         )}
       </View>
-
-      {/* Decorativa e estática (sem animação — no site a de "espiar" parecia
-          bug). Vaza para baixo do header e o primeiro card, desenhado depois,
-          cobre os ombros. No Android quem garante isso é a `elevation` do
-          card; aqui não pode ter elevation/zIndex senão ela passa por cima. */}
-      {showCapivara ? (
-        <View
-          style={styles.capivara}
-          pointerEvents="none"
-          accessible={false}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          <Image source={CAPIVARA_SOURCE} style={styles.capivaraImage} />
-        </View>
-      ) : null}
     </View>
+  );
+
+  const renderCard = (item: Evento) => (
+    <EventoCard
+      evento={item}
+      onPress={() => navigation.navigate('DetalheEvento', { id: item._id })}
+      favorito={isFavorito(item._id)}
+      onToggleFavorito={() => {
+        void toggle(item);
+      }}
+      onPressComentarios={() =>
+        navigation.navigate('DetalheEvento', {
+          id: item._id,
+          abrirComentarios: true,
+        })
+      }
+    />
   );
 
   const renderFooter = () => {
@@ -280,27 +301,50 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <FlatList
-        data={eventos}
+      <SectionList<Evento, SecaoLista>
+        sections={secoes}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <EventoCard
-            evento={item}
-            onPress={() =>
-              navigation.navigate('DetalheEvento', { id: item._id })
-            }
-            favorito={isFavorito(item._id)}
-            onToggleFavorito={() => {
-              void toggle(item);
-            }}
-            onPressComentarios={() =>
-              navigation.navigate('DetalheEvento', {
-                id: item._id,
-                abrirComentarios: true,
-              })
-            }
-          />
-        )}
+        stickySectionHeadersEnabled={false}
+        // A FlatList liga isso sozinha no Android; a SectionList não. Sem ele,
+        // todo card já carregado (sombra, elevation, imagem) continua sendo
+        // desenhado mesmo fora da tela e o FPS despenca conforme a lista cresce.
+        removeClippedSubviews={Platform.OS === 'android'}
+        renderSectionHeader={({ section }) =>
+          section.label ? (
+            <SecaoPeriodoHeader
+              label={section.label}
+              total={section.data.length}
+              style={
+                section.key === primeiraSecaoKey
+                  ? undefined
+                  : styles.secaoHeaderEspacado
+              }
+            />
+          ) : null
+        }
+        renderItem={({ item, index, section }) => {
+          if (index !== 0 || section.key !== primeiraSecaoKey) {
+            return renderCard(item);
+          }
+          // Decorativa e estática (sem animação — no site a de "espiar"
+          // parecia bug). Fica no topo do wrapper e o card, desenhado depois,
+          // cobre os ombros. No Android quem garante isso é a `elevation` do
+          // card; aqui não pode ter elevation/zIndex senão ela passa por cima.
+          return (
+            <View style={styles.primeiroCard}>
+              <View
+                style={styles.capivara}
+                pointerEvents="none"
+                accessible={false}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                <Image source={CAPIVARA_SOURCE} style={styles.capivaraImage} />
+              </View>
+              {renderCard(item)}
+            </View>
+          );
+        }}
         ListHeaderComponent={renderHeader()}
         ListEmptyComponent={
           loading ? null : error ? (
@@ -387,12 +431,17 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     gap: spacing.xs,
   },
-  // Respiro extra pra cabeça da capivara não encostar nos chips de filtro.
-  headerWithCapivara: { paddingBottom: spacing.xxl },
+  // Espaço maior entre uma seção e a anterior.
+  secaoHeaderEspacado: { marginTop: spacing.xl },
+  // Reserva acima do primeiro card a parte visível da capivara, pra ela não
+  // invadir o cabeçalho da seção.
+  primeiroCard: {
+    paddingTop: CAPIVARA_HEIGHT * CAPIVARA_VISIBLE_RATIO,
+  },
   capivara: {
     position: 'absolute',
+    top: 0,
     right: spacing.lg,
-    bottom: -CAPIVARA_HEIGHT * (1 - CAPIVARA_VISIBLE_RATIO),
     width: CAPIVARA_WIDTH,
     height: CAPIVARA_HEIGHT,
   },
