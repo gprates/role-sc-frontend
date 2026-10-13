@@ -1,7 +1,0 @@
-# Pasta para figuras (PDF/PNG/JPG) referenciadas pelos .tex.
-# Padrões esperados de nomes:
-#   ArquiteturaGeral.pdf
-#   ModeloNegocio.pdf, AnaliseSWOT.pdf
-#   DiagramaER.pdf
-#   DiagramaCasosUsoVisitante.pdf, DiagramaCasosUsoUsuario.pdf
-#   TelaLogin.png, TelaCadastro.png, ... (capturas reais do APK)
