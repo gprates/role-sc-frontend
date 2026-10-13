@@ -1,174 +1,294 @@
-# Rolê SC — App Mobile
+# Rolê SC — App Android
 
-Aplicativo mobile em **React Native + Expo** que exibe eventos culturais e municipais do litoral de Santa Catarina (Itajaí, Camboriú, Porto Belo, Itapema, Bombinhas), consumindo a API REST do TCC Rolê SC.
+Aplicativo Android em **React Native + Expo** que reúne eventos culturais e municipais de seis municípios do litoral norte de Santa Catarina (Itajaí, Camboriú, Balneário Camboriú, Porto Belo, Itapema e Bombinhas). Os dados vêm da API REST do projeto (`role-sc-api`).
 
-> Parte do ecossistema TCC: **web-crawler** → **nlp-processor** → **api** → **app** (este projeto).
+> Parte do ecossistema do TCC Rolê SC: **webcrawler** → **processador NLP** → **API** → **app** (este repositório) e site.
+
+O que o app faz:
+
+- lista eventos com busca textual, filtros de município e categoria (multisseleção), período e status (ativos ou passados), rolagem infinita e pull-to-refresh;
+- mostra o detalhe do evento, abre a publicação original no navegador do app e compartilha o evento;
+- favoritos por usuário, guardados na API;
+- comentários públicos com curtidas;
+- cadastro e login por e-mail e senha, verificação de e-mail, recuperação e troca de senha;
+- perfil com nome e foto (upload para o S3 por URL pré-assinada que a API devolve);
+- login com Google (SDK nativo `@react-native-google-signin/google-signin`).
+
+Só Android nesta fase. O app não acessa banco nem AWS diretamente: tudo passa pela API.
 
 ---
 
 ## Stack
 
 | Tecnologia | Uso |
-|------------|-----|
-| React Native + Expo SDK 54 | Framework mobile (Android only nesta fase) |
+|---|---|
+| Expo SDK 54, React Native 0.81, React 19 | Framework mobile (nova arquitetura ligada) |
 | TypeScript 5.9 | Tipagem |
-| React Navigation 7 | Navegação (stack + bottom tabs) |
-| Axios | Cliente HTTP |
-| AsyncStorage | Persistência do JWT e do usuário da sessão |
-| Context API | Estado global de autenticação e de favoritos |
-| expo-linear-gradient, @expo/vector-icons | UI |
-| expo-web-browser | Abrir a publicação original em navegador in-app |
-| React Native `Share` | Compartilhamento nativo Android |
-| pnpm | Package manager (consistência com backend) |
+| React Navigation 7 | Navegação (stack + abas) |
+| Axios | Cliente HTTP (headers `x-api-key` e `Authorization: Bearer`) |
+| AsyncStorage | Token JWT e usuário da sessão |
+| `@react-native-google-signin/google-signin` | Login com Google (módulo nativo) |
+| expo-image-picker, expo-file-system | Foto de perfil |
+| expo-updates | Atualizações OTA (EAS Update) |
+| pnpm | Gerenciador de pacotes |
+| EAS Build / Submit / Update | Build na nuvem e publicação na Play Store |
+
+---
+
+## Antes de começar: o app não roda no Expo Go
+
+O app importa o módulo nativo do Google Sign-In na tela de login, que é carregada na abertura. O Expo Go não traz esse módulo, então **o app inteiro quebra ao abrir no Expo Go** (erro `TurboModuleRegistry.getEnforcing(...): 'RNGoogleSignin' could not be found`), não só o botão do Google.
+
+Para rodar é preciso um **development build**: um APK de debug do próprio app, compilado na sua máquina com `npx expo run:android`. Ele inclui todos os módulos nativos e continua carregando o JavaScript do Metro, com Fast Refresh.
+
+- O projeto não tem `expo-dev-client` nem perfil `development` no `eas.json`, então não existe dev build pelo EAS. O caminho é compilar localmente.
+- `pnpm start` (= `expo start`) só sobe o Metro. Não leia o QR code nem aperte `a`: isso abre o Expo Go.
+- `pnpm android` (= `expo start --android`) também tenta abrir no Expo Go e **não serve** para este app.
 
 ---
 
 ## Pré-requisitos
 
-- **Node.js 20.19+** (Expo SDK 54 exige — seu Node atual é 16, será necessário atualizar)
-- **pnpm 8+**
-- **Emulador Android** (Android Studio) ou um celular Android com o app **Expo Go** instalado
+| Item | Versão | Observação |
+|---|---|---|
+| Node.js | 20.19 ou mais novo | Testado com 24.21 |
+| pnpm | 9 ou mais novo | O `pnpm-lock.yaml` é do formato v9; testado com 12.5.1 |
+| Android Studio | atual | Instala o Android SDK, o `adb` e o emulador |
+| Android SDK | Platform 36, Build-Tools 36.0.0, Platform-Tools | O NDK 27.1.12297006 é baixado pelo Gradle se faltar |
+| JDK | 17 | Versão recomendada pelo React Native. JDKs muito novos (por exemplo 25+) não são suportados pelo Gradle 8.14 do projeto |
+| Emulador ou aparelho | Android 7.0+ (API 24) | Para testar o login com Google, use uma imagem de emulador **com Google Play** |
+| API Rolê SC | — | Local (`role-sc-api`, porta 3000) ou de produção |
 
----
-
-## Setup
-
-```bash
-# 1. Instalar dependências
-pnpm install
-
-# 2. Configurar variáveis de ambiente
-cp .env.example .env
-# Edite .env e preencha EXPO_PUBLIC_API_BASE_URL e EXPO_PUBLIC_API_KEY
-
-# 3. (Opcional) Corrigir versões das dependências Expo (recomendado na primeira vez)
-pnpm fix-deps
-
-# 4. Rodar
-pnpm start            # abre o Metro + QR code para Expo Go
-pnpm android          # abre direto no emulador Android
-```
-
-### Variáveis de ambiente (`.env`)
-
-```
-EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:3000
-EXPO_PUBLIC_API_KEY=<sua-api-key>
-```
-
-- `10.0.2.2` é o alias do host no emulador Android (equivalente a `localhost` do seu PC quando roda o `invoke-local` do backend).
-- Em um celular físico, troque por `http://<IP-do-PC>:3000` ou pela URL do API Gateway.
-- `EXPO_PUBLIC_API_KEY` é obrigatório — o API Gateway rejeita requests sem o header `x-api-key`.
-
-> Qualquer variável prefixada com `EXPO_PUBLIC_` é automaticamente disponibilizada em `process.env` no app em runtime (recurso nativo do Expo SDK 49+).
-
----
-
-## Arquitetura
-
-```
-src/
-├── App.tsx                         # entry point do app
-├── navigation/
-│   ├── RootNavigator.tsx           # escolhe Auth ou App (baseado no token)
-│   ├── AuthNavigator.tsx           # stack: Login, Cadastro, RecuperarSenha
-│   ├── AppNavigator.tsx            # bottom tabs: Eventos, Favoritos, Perfil
-│   └── types.ts                    # tipos do React Navigation
-├── screens/
-│   ├── auth/                       # LoginScreen, CadastroScreen, RecuperarSenhaScreen
-│   ├── eventos/                    # HomeScreen, DetalheEventoScreen, ComentariosModal
-│   ├── favoritos/                  # FavoritosScreen
-│   └── perfil/                     # PerfilScreen, EditarPerfilScreen, AlterarSenhaScreen
-├── components/
-│   ├── Button.tsx, Input.tsx
-│   ├── EventoCard.tsx, EventoCoverPlaceholder.tsx
-│   ├── CategoriaBadge.tsx, FilterChip.tsx
-│   ├── EmptyState.tsx, Logo.tsx, ScreenBackground.tsx
-├── services/
-│   ├── api.ts                      # axios com interceptors (x-api-key + JWT)
-│   ├── auth.service.ts             # register, login, getMe, forgotPassword (stub)
-│   ├── evento.service.ts           # list, getById
-│   ├── metadata.service.ts         # getMunicipios, getCategorias
-│   └── favoritos.service.ts        # list, listIds, add, remove (/favoritos da API)
-├── contexts/
-│   ├── AuthContext.tsx             # user, token, signIn, signUp, signOut
-│   └── FavoritosContext.tsx        # favoritos do usuário logado, com toggle otimista
-├── hooks/
-│   └── useEventos.ts               # lista com filtros + paginação / infinite scroll
-├── types/                          # Evento, User, Auth + respostas da API
-├── theme/                          # colors, typography, spacing
-└── utils/                          # storage (AsyncStorage tipado), format (datas), constants
-```
-
-### Padrões aplicados
-
-- **Service Layer** — toda chamada HTTP encapsulada em um `*.service.ts`, espelhando o backend
-- **Estado global por contexto** — favoritos vivem em um único `FavoritosContext`, então Home, Detalhe e a aba Favoritos mostram sempre o mesmo coração, sem refetch entre telas
-- **Interceptors axios** — injetam `x-api-key` (env) e `Authorization: Bearer <token>` (AsyncStorage) automaticamente
-- **401 handler** — o interceptor dispara um logout automático via callback injetado pelo `AuthContext`
-- **Single-select filters** — os filtros de município e categoria são single-select para bater com o contrato atual do backend (`/eventos?municipio=...&categoria=...`)
-
----
-
-## Funcionalidades
-
-### Implementadas (com backend real)
-- Cadastro e login com JWT
-- Listagem de eventos com filtro por município, categoria e busca textual
-- Paginação via scroll infinito + pull-to-refresh
-- Detalhe do evento com todas as informações
-- Abrir publicação original no navegador (`expo-web-browser`)
-- Compartilhar evento (Share nativo do Android)
-
-### Favoritos
-- Persistidos por usuário no backend (`GET/POST/DELETE /favoritos`), sincronizados entre aparelhos
-
-### UI pronta, aguardando endpoints do backend
-- Curtir, comentar, "eu vou!" — botões mostram "Em breve"
-- Editar perfil (apenas nome) — implementada conforme [`docs/CONTRATO_EDITAR_PERFIL.md`](./docs/CONTRATO_EDITAR_PERFIL.md). Aguarda 1 endpoint no backend.
-- Recuperar senha — fluxo completo (email → código → nova senha) implementado conforme [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md). Aguarda implementação dos 3 endpoints no backend.
-- Alterar senha (usuário logado) — implementada conforme [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md). Aguarda 1 endpoint no backend.
-- Upload de avatar — implementada conforme [`docs/CONTRATO_AVATAR.md`](./docs/CONTRATO_AVATAR.md). Aguarda 2 endpoints + bucket S3 no backend.
-- Login com Google — implementada conforme [`docs/CONTRATO_LOGIN_GOOGLE.md`](./docs/CONTRATO_LOGIN_GOOGLE.md). Aguarda 1 endpoint no backend + setup do Google Cloud Console.
-
----
-
-## Sincronização com o backend
-
-Os arrays abaixo **devem ficar em sincronia** com o backend (`src/utils/constants.ts`):
-
-- `MUNICIPIOS_FIXOS`: os 5 municípios-alvo do TCC. A API pode retornar um subconjunto (apenas os que já têm eventos crawleados) via `GET /municipios`, mas os chips da home mostram sempre os 5 para UX consistente.
-- `CATEGORIAS`: deve bater com `CATEGORIAS_VALIDAS` do NLP Processor e da API (`GET /categorias`).
-
-Se o backend mudar alguma dessas listas, basta atualizar o arquivo de constantes — nenhuma tela precisa ser mexida.
-
----
-
-## Publicação
-
-O projeto já vem configurado pra build na nuvem via **EAS (Expo Application Services)**. Perfis configurados no `eas.json`:
-
-- **`preview`** — gera APK instalável, distribuído por link. Grátis.
-- **`production`** — gera AAB (Android App Bundle) pra submissão na Play Store.
-
-Comandos rápidos (depois de configurar a conta Expo — ver `docs/PUBLICACAO.md`):
+No Windows, depois de instalar o Android Studio, configure as variáveis de ambiente do usuário:
 
 ```powershell
-pnpm build:preview        # gera APK de teste (15-20 min na nuvem)
-pnpm build:production     # gera AAB pra Play Store
-pnpm submit:production    # envia o AAB pro Play Console
+# PowerShell (abra um terminal novo depois)
+setx ANDROID_HOME "$env:LOCALAPPDATA\Android\Sdk"
+setx JAVA_HOME "C:\caminho\para\o\jdk-17"
+# e adicione %LOCALAPPDATA%\Android\Sdk\platform-tools ao PATH
 ```
 
-O fluxo completo, incluindo setup da conta Expo, configuração de secrets, passos do Google Play Console e roadmap pragmático pro TCC, está em **[`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md)**.
+Confira com `adb --version` e `java -version`.
 
-Documentos de arquitetura relacionados:
-- [`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md) — builds e publicação
-- [`docs/CONTRATO_VERIFICACAO_EMAIL.md`](./docs/CONTRATO_VERIFICACAO_EMAIL.md) — contrato de integração backend ↔ frontend pra verificação de email
-- [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md) — contrato pra recuperação de senha por código de 6 dígitos
-- [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md) — contrato pra alteração de senha pelo usuário logado
-- [`docs/CONTRATO_AVATAR.md`](./docs/CONTRATO_AVATAR.md) — contrato pra upload de avatar (S3 + presigned URLs)
-- [`docs/CONTRATO_EDITAR_PERFIL.md`](./docs/CONTRATO_EDITAR_PERFIL.md) — contrato pra edição de nome de exibição
-- [`docs/CONTRATO_LOGIN_GOOGLE.md`](./docs/CONTRATO_LOGIN_GOOGLE.md) — contrato pra login com Google (OAuth2 / OIDC)
+No Windows, se o build nativo falhar com erro de caminho longo (`Filename too long` ou erros do CMake com caminhos de mais de 250 caracteres), ative os caminhos longos do Windows (`LongPathsEnabled`) e mantenha o projeto numa pasta de caminho curto (por exemplo `C:\dev\role-sc-frontend`).
+
+---
+
+## Instalação e checagens (não precisam de Android SDK)
+
+```bash
+pnpm install --frozen-lockfile
+cp .env.example .env          # depois ajuste os valores (ver "Variáveis de ambiente")
+
+pnpm type-check               # tsc --noEmit
+npx expo-doctor               # saúde do projeto Expo
+npx expo export --platform android --output-dir <pasta-temporária>   # gera o bundle JS (Hermes) sem precisar de SDK
+```
+
+Estado conhecido: `pnpm type-check` acusa 1 erro em `src/services/avatar.service.ts:101` (opção `size` que o tipo do `expo-file-system` não declara) e `expo-doctor` passa em 16 de 18 checagens (falta a peer dependency `expo-font` e há 4 pacotes Expo com patch abaixo do esperado). Nenhum dos dois impede o Metro de gerar o bundle.
+
+---
+
+## Rodar no emulador Android com a API local
+
+> Os passos com emulador e aparelho seguem a configuração que o Expo gera para este projeto (conferida com `npx expo prebuild`), mas ainda não foram executados de ponta a ponta num emulador: a máquina usada na revisão desta documentação não tinha Android SDK. Instalação, Metro e bundle Android foram verificados.
+
+1. **Suba a API** na porta 3000 do seu PC (pelo Docker Compose ou com `pnpm dev`, conforme o README do `role-sc-api`). Teste no PC: `curl http://localhost:3000/eventos` deve devolver JSON.
+2. **Abra um emulador** pelo Device Manager do Android Studio e confira que ele aparece em `adb devices`.
+3. **Aponte o app para a API** no `.env`:
+
+   ```env
+   EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:3000
+   ```
+
+   No emulador oficial do Android, `10.0.2.2` é o endereço do PC (o `localhost` do emulador é o próprio emulador). No Genymotion o endereço é `10.0.3.2`.
+4. **Compile, instale e abra:**
+
+   ```bash
+   npx expo run:android
+   ```
+
+   Na primeira vez o comando gera a pasta `android/` (ignorada pelo git), baixa as dependências do Gradle (alguns minutos), instala o APK de debug, sobe o Metro na porta 8081 e abre o app.
+
+No dia a dia:
+
+- Mudou código TS/TSX: o Fast Refresh aplica sozinho.
+- Mudou o `.env`: reinicie o Metro (`npx expo start --clear`) e recarregue o app (tecla `r` no terminal do Metro ou `R` duas vezes no emulador). Não precisa recompilar: as `EXPO_PUBLIC_*` só existem no JavaScript.
+- Mudou dependência nativa, plugin ou `app.json`: rode `npx expo run:android` de novo.
+- Com o APK de debug já instalado, também dá para só subir o Metro (`npx expo start`) e abrir o ícone do Rolê SC no emulador; o build de debug procura o Metro em `10.0.2.2:8081`.
+
+---
+
+## Rodar em um aparelho físico com a API local
+
+1. No celular, ative as **Opções do desenvolvedor** e a **Depuração USB**. Conecte o cabo e aceite a autorização; `adb devices` deve listar o aparelho como `device`.
+2. Compile e instale escolhendo o aparelho:
+
+   ```bash
+   npx expo run:android --device
+   ```
+
+   O Expo CLI faz `adb reverse` da porta do Metro (8081), então o app carrega o JavaScript pelo cabo.
+3. Escolha como o celular chega na API:
+
+   **Opção A — pelo cabo (recomendada).** Encaminhe a porta da API e use `localhost`:
+
+   ```bash
+   adb reverse tcp:3000 tcp:3000
+   ```
+
+   ```env
+   EXPO_PUBLIC_API_BASE_URL=http://localhost:3000
+   ```
+
+   O encaminhamento se perde quando o cabo é desconectado ou o `adb` reinicia; rode o comando de novo. Funciona igual com a depuração por Wi-Fi do Android 11+ (`adb pair` / `adb connect`).
+
+   **Opção B — pela rede Wi-Fi.** PC e celular na mesma rede:
+
+   ```env
+   EXPO_PUBLIC_API_BASE_URL=http://<IP-do-PC-na-rede>:3000
+   ```
+
+   - Descubra o IP com `ipconfig` (campo "Endereço IPv4" do adaptador Wi-Fi).
+   - No Windows, deixe a rede como **Privada** e libere a porta 3000 no firewall (PowerShell como administrador):
+
+     ```powershell
+     New-NetFirewallRule -DisplayName "Role SC API (dev)" -Direction Inbound -Protocol TCP -LocalPort 3000 -Action Allow -Profile Private
+     ```
+
+   - Teste abrindo `http://<IP-do-PC-na-rede>:3000/eventos` no navegador do celular. Se não abrir, a rede pode isolar os aparelhos (redes de universidade e de convidados costumam fazer isso) ou a API pode estar publicada só em `127.0.0.1`; nesses casos use a Opção A.
+
+4. Depois de mudar o `.env`, reinicie o Metro com `npx expo start --clear` e recarregue o app (agite o aparelho para abrir o menu de desenvolvimento e toque em **Reload**). Se você subir o Metro sem o `run:android`, rode também `adb reverse tcp:8081 tcp:8081`.
+
+### HTTP sem TLS (cleartext)
+
+O Android 9+ bloqueia `http://` por padrão. No **build de debug** (o do `npx expo run:android`) o Expo gera `android/app/src/debug/AndroidManifest.xml` com `android:usesCleartextTraffic="true"`, então a API local em `http://` funciona. Builds **release** (o APK `preview` e o AAB `production` do EAS, ou `npx expo run:android --variant release`) não têm essa liberação: apontados para `http://`, eles falham com "Não foi possível conectar ao servidor". Para testar um build release contra a API local, exponha a API por **HTTPS** (por exemplo, um túnel). Não altere a configuração de produção só para isso.
+
+### Login com Google em desenvolvimento
+
+- Com `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` vazio, o botão "Entrar com Google" avisa que não está configurado; o resto do app funciona com e-mail e senha.
+- Para funcionar no build de debug é preciso: o Client ID **Web** do Google Cloud em `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` e o mesmo valor em `GOOGLE_WEB_CLIENT_ID` na API; um OAuth Client **Android** com o pacote `com.rolesc.app` e o SHA-1 da keystore de debug (gerada em `android/app/debug.keystore`; veja o SHA-1 com `cd android && ./gradlew signingReport`); e um emulador com Google Play e conta Google (ou um aparelho real). Sem o SHA-1 certo o Google responde `DEVELOPER_ERROR`.
+
+### Cadastro e e-mails na API local
+
+O login por e-mail exige usuário com e-mail verificado (a API responde 403 `EMAIL_NOT_VERIFIED`, e o app leva à tela de verificação). Cadastro, reenvio de verificação e recuperação de senha dependem do envio de e-mail configurado na API; veja o README do `role-sc-api` para saber como ele funciona localmente. O upload de foto de perfil depende do S3 configurado na API.
+
+---
+
+## Docker
+
+**O app não roda em Docker.** É um app nativo Android: precisa de um emulador ou de um aparelho, e o development build é compilado com o Android SDK na sua máquina. Por isso este repositório não tem Dockerfile.
+
+O que roda em Docker é o backend. Para usar o app com a API do Docker Compose:
+
+1. Suba a API pelo compose (instruções no README do `role-sc-api`). Ela fica na porta **3000 do PC**.
+2. Configure `EXPO_PUBLIC_API_BASE_URL` conforme onde o app roda:
+
+| Onde o app roda | `EXPO_PUBLIC_API_BASE_URL` | O que mais precisa |
+|---|---|---|
+| Emulador do Android Studio | `http://10.0.2.2:3000` | nada |
+| Aparelho via USB | `http://localhost:3000` | `adb reverse tcp:3000 tcp:3000` |
+| Aparelho via Wi-Fi | `http://<IP-do-PC-na-rede>:3000` | mesma rede, firewall liberado e porta publicada em todas as interfaces (não só `127.0.0.1`) |
+
+3. Rode `npx expo run:android` como descrito acima. A API local não exige `x-api-key` (só o API Gateway de produção exige), então `EXPO_PUBLIC_API_KEY` pode ficar vazia.
+
+---
+
+## Variáveis de ambiente
+
+Copie `.env.example` para `.env`. O `.env` está no `.gitignore`. Toda variável `EXPO_PUBLIC_*` é **embutida no JavaScript** do app (qualquer pessoa com o APK consegue ler), então nenhuma delas pode ser um segredo de verdade.
+
+| Variável | Obrigatória | Lida em | Desenvolvimento local | Produção |
+|---|---|---|---|---|
+| `EXPO_PUBLIC_API_BASE_URL` | sim | `src/services/api.ts` | `http://10.0.2.2:3000`, `http://localhost:3000` ou `http://<IP>:3000` (ver acima) | URL do stage do API Gateway (saída da stack da API), cadastrada no EAS |
+| `EXPO_PUBLIC_API_KEY` | só em produção | `src/services/api.ts` (header `x-api-key`) | vazia (a API local ignora); vazia, o app só registra um aviso no log | API Key do Usage Plan do API Gateway, cadastrada no EAS |
+| `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | não (sem ela o login Google fica desativado) | `src/hooks/useGoogleSignIn.ts` | vazia, ou o Client ID Web de teste | Client ID Web do Google Cloud; mesmo valor de `GOOGLE_WEB_CLIENT_ID` na API |
+
+Não há Client ID Android no app: o Google identifica o app pelo pacote `com.rolesc.app` e pelo SHA-1 da keystore cadastrados no OAuth Client Android. (A antiga `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` foi removida do `.env.example` porque o código nunca a leu.)
+
+---
+
+## Scripts
+
+| Script | Comando | Observação |
+|---|---|---|
+| `pnpm start` | `expo start` | Sobe o Metro. Use com um APK de debug já instalado; não abra no Expo Go |
+| `pnpm android` | `expo start --android` | Abre no Expo Go: **não funciona** com este app. Use `npx expo run:android` |
+| `pnpm web` | `expo start --web` | Fora do escopo (o Google Sign-In nativo não existe na web) |
+| `pnpm type-check` | `tsc --noEmit` | 1 erro conhecido (ver acima) |
+| `pnpm fix-deps` | `expo install --fix` | Alinha versões das libs Expo ao SDK (altera `package.json` e lockfile) |
+| `pnpm build:preview` | `eas build --platform android --profile preview` | APK de teste na nuvem |
+| `pnpm build:production` | `eas build --platform android --profile production` | AAB para a Play Store |
+| `pnpm submit:production` | `eas submit --platform android --profile production` | Envia o AAB para a Play Console |
+
+---
+
+## Deploy (processo atual)
+
+A publicação é feita com **EAS (Expo Application Services)**, por comandos manuais na máquina do desenvolvedor. O guia completo, com o passo a passo da conta Expo e da Play Console, está em [`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md). Resumo:
+
+### Configuração (uma vez)
+
+1. Conta Expo com acesso ao projeto (`owner` e `extra.eas.projectId` em `app.json`).
+2. CLI do EAS instalada globalmente (`pnpm add -g eas-cli` ou `npm i -g eas-cli`; o `eas.json` pede versão 13 ou mais nova) e `eas login`.
+3. Variáveis de build cadastradas no projeto Expo, porque o `.env` não é enviado para a nuvem: `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_API_KEY` e `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`. O guia usa `eas secret:create --scope project --name <VARIÁVEL> --value "<valor>"`; nas versões recentes do `eas-cli` o equivalente é `eas env:create`. Confira com `eas secret:list` / `eas env:list`. Sem o Client ID Web, o build sai com o login Google desativado.
+4. Google Cloud: OAuth Client Web (o valor acima) e OAuth Client Android com o pacote `com.rolesc.app` e o SHA-1 da keystore de produção (`eas credentials` mostra). Se a Play Store assinar o app (Play App Signing), cadastre também o SHA-1 de assinatura mostrado na Play Console.
+5. Play Console: app criado, "Conteúdo do app" preenchido e Service Account Key configurada pelo `eas credentials` (Android → Production) para o `eas submit`.
+
+A assinatura usa as credenciais Android gerenciadas pelo EAS (não há keystore no repositório).
+
+### A cada versão
+
+| Passo | Comando | O que faz |
+|---|---|---|
+| 1. Versão | editar `version` em `app.json` (e, por consistência, `package.json` e `APP_VERSION` em `src/utils/constants.ts`) | Com `runtimeVersion.policy = appVersion`, a versão também separa o canal de updates OTA |
+| 2. Checar | `pnpm type-check` e `npx expo-doctor` | Manual, sem CI |
+| 3. APK de teste | `pnpm build:preview` | Perfil `preview`: distribuição interna, canal `preview`, APK; link e QR code no expo.dev |
+| 4. AAB de produção | `pnpm build:production` | Perfil `production`: loja, canal `production`, AAB, `autoIncrement` do `versionCode` (com `appVersionSource: local`, o número fica no arquivo local; commite a alteração) |
+| 5. Enviar | `pnpm submit:production` | Envia o último build para a trilha **internal** da Play Console |
+| 6. Promover | Play Console (web) | Teste interno → fechado → produção |
+
+**Correção só de JavaScript (OTA):** `eas update --channel production --message "..."`. Só alcança instalações com a mesma `version`. Atenção: o update é empacotado na sua máquina, então as `EXPO_PUBLIC_*` vêm do ambiente local (ou de `--environment production` nas versões recentes do `eas-cli`). Publicar com o `.env` de desenvolvimento faria o app de produção apontar para `10.0.2.2`.
+
+---
+
+## Estrutura
+
+```
+index.ts                 # registra o App
+app.json                 # configuração Expo (pacote, plugins, updates)
+eas.json                 # perfis de build e submit do EAS
+src/
+├── App.tsx              # providers (gestos, teclado, safe area, auth, favoritos)
+├── navigation/          # RootNavigator (Auth x App), AuthNavigator, AppNavigator (abas)
+├── screens/
+│   ├── auth/            # Login, Cadastro, VerificarEmail, RecuperarSenha, ConfirmarCodigo, RedefinirSenha
+│   ├── eventos/         # Home (lista + filtros), DetalheEvento, ComentariosModal
+│   ├── favoritos/       # Favoritos
+│   └── perfil/          # Perfil, EditarPerfil, AlterarSenha
+├── components/          # botões, inputs, cards, chips e modais de filtro, botão do Google
+├── services/            # api.ts (axios + interceptors) e um *.service.ts por recurso da API
+├── contexts/            # AuthContext (sessão) e FavoritosContext
+├── hooks/               # useEventos, useComentarios, useAvatarUpload, useGoogleSignIn, useDebounce
+├── types/               # tipos de Evento, User, Comentario, Avatar e respostas da API
+├── theme/               # cores, tipografia, espaçamento
+└── utils/               # storage, datas, períodos, senha, compartilhar, constantes
+docs/                    # guia de publicação e contratos de integração com a API
+```
+
+Constantes que precisam acompanhar a API e o processador NLP (`src/utils/constants.ts` e afins): `MUNICIPIOS_FIXOS` (6 municípios), `CATEGORIAS` (9 categorias), regras de senha (`src/utils/password.ts`), limite de 1000 caracteres por comentário e limites do avatar (5 MB; JPEG, PNG, WebP ou GIF).
+
+---
+
+## Documentação relacionada
+
+- [`docs/PUBLICACAO.md`](./docs/PUBLICACAO.md) — builds e publicação pelo EAS
+- [`docs/CONTRATO_VERIFICACAO_EMAIL.md`](./docs/CONTRATO_VERIFICACAO_EMAIL.md) — verificação de e-mail
+- [`docs/CONTRATO_RECUPERACAO_SENHA.md`](./docs/CONTRATO_RECUPERACAO_SENHA.md) — recuperação de senha por código
+- [`docs/CONTRATO_ALTERAR_SENHA.md`](./docs/CONTRATO_ALTERAR_SENHA.md) — alteração de senha
+- [`docs/CONTRATO_AVATAR.md`](./docs/CONTRATO_AVATAR.md) — upload de avatar (S3 + URL pré-assinada)
+- [`docs/CONTRATO_EDITAR_PERFIL.md`](./docs/CONTRATO_EDITAR_PERFIL.md) — edição do nome
+- [`docs/CONTRATO_LOGIN_GOOGLE.md`](./docs/CONTRATO_LOGIN_GOOGLE.md) — login com Google
 
 ---
 

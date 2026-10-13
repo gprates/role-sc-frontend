@@ -17,6 +17,13 @@ web-build/
 
 expo-env.d.ts
 
+# Pastas nativas geradas por `npx expo prebuild` / `npx expo run:android`.
+# O projeto usa Continuous Native Generation: o EAS Build regenera o nativo a
+# partir do app.json, então estas pastas não devem ir para o git (nem para o
+# upload do EAS).
+/android
+/ios
+
 # Material de referência local (TCC do Thiago Zipper Melato usado como modelo
 # de template). Não versionar — uso interno apenas.
 monografia-referencia/
