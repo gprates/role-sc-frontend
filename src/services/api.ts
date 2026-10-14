@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
-import { STORAGE_KEYS } from '@/utils/constants';
+import { APP_VERSION, STORAGE_KEYS } from '@/utils/constants';
 import { storage } from '@/utils/storage';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
@@ -34,6 +34,8 @@ const api: AxiosInstance = axios.create({
   timeout: 15_000,
   headers: {
     'Content-Type': 'application/json',
+    // Identifica o cliente nos logs da API (o site chega com `x-client: web`).
+    'x-client': `app/${APP_VERSION}`,
   },
 });
 
