@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { extractErrorMessage } from '@/services/api';
 import { authService } from '@/services/auth.service';
 import { colors, radius, spacing, typography } from '@/theme';
+import { CLARITY_MASK } from '@/utils/clarity';
 
 import { PerfilStackScreenProps } from '@/navigation/types';
 
@@ -116,7 +117,11 @@ export const EditarPerfilScreen: React.FC<Props> = ({ navigation }) => {
                 color={colors.textMuted}
                 style={styles.readOnlyIcon}
               />
-              <Text style={styles.readOnlyText} numberOfLines={1}>
+              <Text
+                style={styles.readOnlyText}
+                numberOfLines={1}
+                testID={CLARITY_MASK}
+              >
                 {user?.email ?? '—'}
               </Text>
               <Ionicons

@@ -14,6 +14,7 @@ import { Button } from '@/components/Button';
 import { authService } from '@/services/auth.service';
 import { extractErrorMessage } from '@/services/api';
 import { colors, radius, spacing, typography } from '@/theme';
+import { CLARITY_MASK } from '@/utils/clarity';
 
 import { AuthStackScreenProps } from '@/navigation/types';
 
@@ -96,7 +97,9 @@ export const VerificarEmailScreen: React.FC<Props> = ({ route, navigation }) => 
         </View>
 
         <Text style={styles.title}>Verifique seu email</Text>
-        <Text style={styles.subtitle}>
+        {/* O testID fica no parágrafo todo: o <Text> aninhado do email não
+            vira uma view nativa própria, então não dá pra mascarar só ele. */}
+        <Text style={styles.subtitle} testID={CLARITY_MASK}>
           Enviamos um link de confirmação para{' '}
           <Text style={styles.emailStrong}>{email}</Text>. Abra sua caixa de
           entrada e clique no link para ativar sua conta.

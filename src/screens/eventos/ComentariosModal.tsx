@@ -27,6 +27,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { extractErrorMessage } from '@/services/api';
 import { colors, radius, spacing, typography } from '@/theme';
 import { COMENTARIO_MAX_LENGTH, Comentario } from '@/types';
+import { CLARITY_MASK } from '@/utils/clarity';
 import { formatRelativeTime } from '@/utils/format';
 
 interface ComentariosModalProps {
@@ -364,6 +365,7 @@ const ComentarioItem: React.FC<ComentarioItemProps> = ({
           source={{ uri: comentario.autor.avatarUrl }}
           style={styles.avatar}
           accessibilityLabel={`Foto de ${comentario.autor.nome}`}
+          testID={CLARITY_MASK}
         />
       ) : (
         <LinearGradient
@@ -378,7 +380,7 @@ const ComentarioItem: React.FC<ComentarioItemProps> = ({
 
       <View style={styles.commentBody}>
         <View style={styles.commentHead}>
-          <Text style={styles.autor} numberOfLines={1}>
+          <Text style={styles.autor} numberOfLines={1} testID={CLARITY_MASK}>
             {comentario.autor.nome}
           </Text>
           <Text style={styles.tempo}>

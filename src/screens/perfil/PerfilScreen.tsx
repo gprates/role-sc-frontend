@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAvatarUpload } from '@/hooks/useAvatarUpload';
 import { colors, radius, spacing, typography } from '@/theme';
+import { CLARITY_MASK } from '@/utils/clarity';
 import { APP_VERSION } from '@/utils/constants';
 
 import { PerfilStackScreenProps } from '@/navigation/types';
@@ -61,6 +62,7 @@ export const PerfilScreen: React.FC<Props> = ({ navigation }) => {
                 source={{ uri: avatarUrl }}
                 style={styles.avatarBg}
                 accessibilityLabel="Foto de perfil"
+                testID={CLARITY_MASK}
               />
             ) : (
               <LinearGradient
@@ -83,8 +85,10 @@ export const PerfilScreen: React.FC<Props> = ({ navigation }) => {
               <Ionicons name="camera" size={14} color={colors.textOnPrimary} />
             </View>
           </Pressable>
-          <Text style={styles.userName}>{user?.nome ?? 'Visitante'}</Text>
-          <Text style={styles.userEmail}>
+          <Text style={styles.userName} testID={CLARITY_MASK}>
+            {user?.nome ?? 'Visitante'}
+          </Text>
+          <Text style={styles.userEmail} testID={CLARITY_MASK}>
             {user?.email ?? 'visitante@rolesc.app'}
           </Text>
 

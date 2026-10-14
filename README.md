@@ -203,8 +203,19 @@ Copie `.env.example` para `.env`. O `.env` está no `.gitignore`. Toda variável
 | `EXPO_PUBLIC_API_BASE_URL` | sim | `src/services/api.ts` | `http://10.0.2.2:3000`, `http://localhost:3000` ou `http://<IP>:3000` (ver acima) | URL do stage do API Gateway (saída da stack da API), cadastrada no EAS |
 | `EXPO_PUBLIC_API_KEY` | só em produção | `src/services/api.ts` (header `x-api-key`) | vazia (a API local ignora); vazia, o app só registra um aviso no log | API Key do Usage Plan do API Gateway, cadastrada no EAS |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | não (sem ela o login Google fica desativado) | `src/hooks/useGoogleSignIn.ts` | vazia, ou o Client ID Web de teste | Client ID Web do Google Cloud; mesmo valor de `GOOGLE_WEB_CLIENT_ID` na API |
+| `EXPO_PUBLIC_CLARITY_PROJECT_ID` | não (sem ela o Clarity fica desligado) | `src/utils/clarity.ts` | vazia, ou o Project ID de um projeto de teste | Project ID do Microsoft Clarity, cadastrado no EAS (ver abaixo) |
 
 Não há Client ID Android no app: o Google identifica o app pelo pacote `com.rolesc.app` e pelo SHA-1 da keystore cadastrados no OAuth Client Android. (A antiga `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` foi removida do `.env.example` porque o código nunca a leu.)
+
+### Microsoft Clarity (heatmaps e gravação de sessão)
+
+O app usa o SDK `@microsoft/react-native-clarity`, inicializado uma vez em `index.ts` (código em `src/utils/clarity.ts`).
+
+- **Onde fica o ID:** o Project ID (página Settings do painel do Clarity) vai em `EXPO_PUBLIC_CLARITY_PROJECT_ID`. Em desenvolvimento, no `.env`. Nos builds do EAS, cadastre a variável no projeto Expo (expo.dev ou `eas env:create`) nos ambientes usados pelos perfis `preview` e `production`, como as outras `EXPO_PUBLIC_*`. Não coloque o ID no `eas.json` nem em arquivo versionado.
+- **Sem ID, o Clarity fica desligado:** o SDK não é inicializado e o app funciona normalmente.
+- **Só grava em Android 10+ (API 29).** O `minSdk` do app continua 24: em Android 7 a 9 o app instala e roda, mas não envia dados ao Clarity.
+- **Exige build nativa nova.** O SDK tem código nativo, então só passa a funcionar num APK/AAB gerado depois da instalação do pacote; um update OTA não leva o módulo nativo. Se um update com esse código chegar a um binário antigo, o app não quebra, só não grava. Por isso, publique a integração junto com uma `version` nova (ver "Deploy").
+- **Dados pessoais:** campos de texto (`TextInput`) são mascarados pelo SDK em qualquer modo. Nome, email, fotos de perfil e o código de verificação exibidos em tela recebem `testID="clarityMask"`; para que sejam mascarados, cadastre a regra `#clarityMask` como **Mask** em Settings > Masking no painel do Clarity.
 
 ---
 
@@ -231,7 +242,7 @@ A publicação é feita com **EAS (Expo Application Services)**, por comandos ma
 
 1. Conta Expo com acesso ao projeto (`owner` e `extra.eas.projectId` em `app.json`).
 2. CLI do EAS instalada globalmente (`pnpm add -g eas-cli` ou `npm i -g eas-cli`; o `eas.json` pede versão 13 ou mais nova) e `eas login`.
-3. Variáveis de build cadastradas no projeto Expo, porque o `.env` não é enviado para a nuvem: `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_API_KEY` e `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`. O guia usa `eas secret:create --scope project --name <VARIÁVEL> --value "<valor>"`; nas versões recentes do `eas-cli` o equivalente é `eas env:create`. Confira com `eas secret:list` / `eas env:list`. Sem o Client ID Web, o build sai com o login Google desativado.
+3. Variáveis de build cadastradas no projeto Expo, porque o `.env` não é enviado para a nuvem: `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_API_KEY`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` e, se for usar o Clarity, `EXPO_PUBLIC_CLARITY_PROJECT_ID`. O guia usa `eas secret:create --scope project --name <VARIÁVEL> --value "<valor>"`; nas versões recentes do `eas-cli` o equivalente é `eas env:create`. Confira com `eas secret:list` / `eas env:list`. Sem o Client ID Web, o build sai com o login Google desativado.
 4. Google Cloud: OAuth Client Web (o valor acima) e OAuth Client Android com o pacote `com.rolesc.app` e o SHA-1 da keystore de produção (`eas credentials` mostra). Se a Play Store assinar o app (Play App Signing), cadastre também o SHA-1 de assinatura mostrado na Play Console.
 5. Play Console: app criado, "Conteúdo do app" preenchido e Service Account Key configurada pelo `eas credentials` (Android → Production) para o `eas submit`.
 

@@ -15,6 +15,7 @@ import { extractErrorMessage } from '@/services/api';
 import { getApiErrorCode } from '@/services/auth.service';
 import { colors, radius, spacing, typography } from '@/theme';
 import { API_ERROR_CODES } from '@/types';
+import { CLARITY_MASK } from '@/utils/clarity';
 
 import { AuthStackScreenProps } from '@/navigation/types';
 
@@ -136,7 +137,9 @@ export const ConfirmarCodigoScreen: React.FC<Props> = ({ route, navigation }) =>
           isFocused ? styles.cellFocused : null,
         ]}
       >
-        <Text style={styles.cellText}>{char}</Text>
+        <Text style={styles.cellText} testID={CLARITY_MASK}>
+          {char}
+        </Text>
       </View>
     );
   });
@@ -159,7 +162,9 @@ export const ConfirmarCodigoScreen: React.FC<Props> = ({ route, navigation }) =>
 
         <View style={styles.header}>
           <Text style={styles.title}>Confirme o código</Text>
-          <Text style={styles.subtitle}>
+          {/* testID no parágrafo todo: o <Text> aninhado do email não vira
+              uma view nativa própria, então não dá pra mascarar só ele. */}
+          <Text style={styles.subtitle} testID={CLARITY_MASK}>
             Enviamos um código de 6 dígitos para{' '}
             <Text style={styles.emailStrong}>{email}</Text>. Digite-o abaixo
             para continuar.
