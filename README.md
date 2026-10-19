@@ -305,4 +305,6 @@ Constantes que precisam acompanhar a API e o processador NLP (`src/utils/constan
 
 ## Licença / Créditos
 
+Distribuído sob a licença MIT. Veja o arquivo LICENSE.
+
 Projeto acadêmico (TCC) de Gabriel Prates — 2026.

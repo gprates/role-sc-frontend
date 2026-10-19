@@ -1,6 +1,7 @@
 {
   "name": "role-sc-frontend",
   "version": "1.0.0",
+  "license": "MIT",
   "description": "App mobile (React Native + Expo) do TCC Rolê SC — eventos culturais e municipais do litoral catarinense.",
   "main": "index.ts",
   "scripts": {
