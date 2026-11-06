@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -72,6 +73,18 @@ export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
     if (!evento?.url) return;
     try {
       await WebBrowser.openBrowserAsync(evento.url);
+    } catch (err) {
+      Alert.alert('Erro', extractErrorMessage(err));
+    }
+  };
+
+  const openComoChegar = async () => {
+    if (!evento?.local) return;
+    const query = encodeURIComponent(`${evento.local}, ${evento.municipio}`);
+    try {
+      await Linking.openURL(
+        `https://www.google.com/maps/search/?api=1&query=${query}`,
+      );
     } catch (err) {
       Alert.alert('Erro', extractErrorMessage(err));
     }
@@ -171,6 +184,8 @@ export const DetalheEventoScreen: React.FC<Props> = ({ route, navigation }) => {
                   icon="location-outline"
                   label="LOCAL"
                   value={evento.local}
+                  linkLabel="Como chegar"
+                  onPressLink={openComoChegar}
                 />
               </>
             ) : null}
@@ -226,9 +241,17 @@ interface InfoRowProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
+  linkLabel?: string;
+  onPressLink?: () => void;
 }
 
-const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value }) => (
+const InfoRow: React.FC<InfoRowProps> = ({
+  icon,
+  label,
+  value,
+  linkLabel,
+  onPressLink,
+}) => (
   <View style={infoRowStyles.row}>
     <View style={infoRowStyles.iconWrap}>
       <Ionicons name={icon} size={20} color={colors.primary} />
@@ -236,6 +259,16 @@ const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value }) => (
     <View style={{ flex: 1 }}>
       <Text style={infoRowStyles.label}>{label}</Text>
       <Text style={infoRowStyles.value}>{value}</Text>
+      {linkLabel && onPressLink ? (
+        <Pressable
+          onPress={onPressLink}
+          hitSlop={8}
+          style={infoRowStyles.link}
+          accessibilityRole="link"
+        >
+          <Text style={infoRowStyles.linkText}>{linkLabel}</Text>
+        </Pressable>
+      ) : null}
     </View>
   </View>
 );
@@ -416,6 +449,8 @@ const infoRowStyles = StyleSheet.create({
   },
   label: { ...typography.micro, color: colors.textMuted },
   value: { ...typography.bodyBold, color: colors.textPrimary, marginTop: 2 },
+  link: { alignSelf: 'flex-start', marginTop: 4 },
+  linkText: { ...typography.captionBold, color: colors.primary },
 });
 
 const actionStyles = StyleSheet.create({
